@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arduino Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/dashboard.css') }}" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+</head>
+<body>
+    <div class="container-fluid">
+        <!-- Header -->
+        <div class="row header">
+            <div class="col-12">
+                <h1><i class="fas fa-microchip"></i> Arduino Dashboard</h1>
+                <div class="connection-status">
+                    <span id="status-indicator" class="status-dot"></span>
+                    <span id="status-text">Disconnected</span>
+                    <button id="connect-btn" class="btn btn-success btn-sm">
+                        <i class="fas fa-plug"></i> Connect Arduino
+                    </button>
+                    <button id="disconnect-btn" class="btn btn-danger btn-sm" style="display: none;">
+                        <i class="fas fa-unplug"></i> Disconnect
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Real-time Data Cards -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card data-card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h5 class="card-title">Temperature</h5>
+                                <h2 id="temp-value">--°C</h2>
+                            </div>
+                            <div class="icon-container">
+                                <i class="fas fa-thermometer-half"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card data-card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h5 class="card-title">Humidity</h5>
+                                <h2 id="humidity-value">--%</h2>
+                            </div>
+                            <div class="icon-container">
+                                <i class="fas fa-tint"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card data-card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h5 class="card-title">Light</h5>
+                                <h2 id="light-value">--</h2>
+                            </div>
+                            <div class="icon-container">
+                                <i class="fas fa-sun"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card data-card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h5 class="card-title">Pressure</h5>
+                                <h2 id="pressure-value">-- hPa</h2>
+                            </div>
+                            <div class="icon-container">
+                                <i class="fas fa-compress-alt"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-chart-line"></i> Temperature & Humidity</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="tempHumidityChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-chart-bar"></i> Light & Pressure</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="lightPressureChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Log -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-list"></i> Recent Data Log</h5>
+                        <button id="clear-log" class="btn btn-sm btn-outline-secondary">Clear Log</button>
+                    </div>
+                    <div class="card-body">
+                        <div id="data-log" class="data-log"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html> 

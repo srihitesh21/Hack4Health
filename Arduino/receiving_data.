@@ -1,0 +1,65 @@
+
+#include <Wire.h>
+#include "MAX30105.h"
+#include <Adafruit_MLX90614.h>
+
+// Create sensor objects
+MAX30105 particleSensor;
+Adafruit_MLX90614 mlx = Adafruit_MLX90614();
+
+void setup() {
+  Serial.begin(9600);
+  Wire.begin();
+
+  // Initialize MAX30102
+  if (!particleSensor.begin(Wire, I2C_SPEED_STANDARD)) {
+    Serial.println("MAX30102 not found. Check connections.");
+    while (1);
+  }
+
+  particleSensor.setup(); // Default settings: IR mode, 50 Hz
+  particleSensor.setPulseAmplitudeRed(0x0A); // Low red LED
+  particleSensor.setPulseAmplitudeIR(0x0F);  // IR LED ON
+
+  // Initialize MLX90614
+  if (!mlx.begin()) {
+    Serial.println("MLX90614 not found. Check connections.");
+    while (1);
+  }
+
+  Serial.println("Initialization successful.\n");
+}
+
+void loop() {
+  // === Sensor Readings ===
+  float temp = mlx.readObjectTempC();
+  long irValue = particleSensor.getIR();
+
+  // === Print Raw Sensor Data ===
+  Serial.print("Skin Temp (C): ");
+  Serial.print(temp);
+  Serial.print(" | IR Value: ");
+  Serial.println(irValue);
+
+  // === Test Case 1: Valid Temperature Range ===
+  if (temp < 30 || temp > 42) {
+    Serial.println("⚠️ Test Case 1 Failed: Temp reading out of human range!");
+  } else {
+    Serial.println("✅ Test Case 1 Passed: Temp is in normal range.");
+  }
+
+  // === Test Case 2: IR Signal Strength Check ===
+  if (irValue < 5000) {
+    Serial.println("⚠️ Test Case 2 Failed: IR signal too low. No finger?");
+  } else {
+    Serial.println("✅ Test Case 2 Passed: IR signal detected.");
+  }
+
+  // === Test Case 3: Heat Stroke Alert Condition ===
+  if (temp > 38.5 && irValue > 20000) {
+    Serial.println("🚨 ALERT: Possible heat stroke risk detected!");
+  }
+
+  Serial.println(); // Extra space for readability
+  delay(2000); // 2 second delay between readings
+}

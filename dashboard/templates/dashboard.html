@@ -31,7 +31,7 @@
 
         <!-- Real-time Data Cards -->
         <div class="row mb-4">
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <div class="card data-card">
                     <div class="card-body">
                         <div class="d-flex justify-content-between">
@@ -46,7 +46,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <div class="card data-card">
                     <div class="card-body">
                         <div class="d-flex justify-content-between">
@@ -61,7 +61,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <div class="card data-card">
                     <div class="card-body">
                         <div class="d-flex justify-content-between">
@@ -76,7 +76,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <div class="card data-card">
                     <div class="card-body">
                         <div class="d-flex justify-content-between">
@@ -86,6 +86,131 @@
                             </div>
                             <div class="icon-container">
                                 <i class="fas fa-compress-alt"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card data-card heart-rate-card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h5 class="card-title">Heart Rate</h5>
+                                <h2 id="bpm-value">-- BPM</h2>
+                            </div>
+                            <div class="icon-container">
+                                <i class="fas fa-heartbeat"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card data-card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h5 class="card-title">PPG Signal</h5>
+                                <h2 id="ppg-value">--</h2>
+                                <small>Raw Value</small>
+                            </div>
+                            <div class="icon-container">
+                                <i class="fas fa-wave-square"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Heart Rate Analysis Section -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-heartbeat"></i> Heart Rate Analysis</h5>
+                        <button id="request-heart-rate" class="btn btn-sm btn-primary">Request Heart Rate Data</button>
+                        <button id="refresh-csv-analysis" class="btn btn-sm btn-success">
+                            <i class="fas fa-sync-alt"></i> Refresh A.csv Analysis
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="heart-rate-chart-container">
+                            <canvas id="heartRateChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-chart-area"></i> PPG Spectrogram</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="spectrogram-container">
+                            <img id="spectrogram-image" src="" alt="PPG Spectrogram" style="max-width: 100%; display: none;">
+                            <div id="spectrogram-placeholder" class="text-center text-muted">
+                                <i class="fas fa-chart-area fa-3x mb-3"></i>
+                                <p>Spectrogram will appear here when heart rate data is available</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- A.csv Analysis Results Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-file-csv"></i> BPM Analysis Results</h5>
+                        <small class="text-muted">Automatic analysis of the A.csv file from BPM directory</small>
+                    </div>
+                    <div class="card-body">
+                        <div id="csv-analysis-display">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="analysis-card">
+                                        <h6>Estimated BPM</h6>
+                                        <h3 id="csv-bpm-display">--</h3>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="analysis-card">
+                                        <h6>Analysis Time</h6>
+                                        <h3 id="csv-time-display">--</h3>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="analysis-card">
+                                        <h6>Status</h6>
+                                        <h3 id="csv-status-display">Loading...</h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-md-6">
+                                    <h6>Time Domain Signal</h6>
+                                    <div id="time-domain-container">
+                                        <img id="time-domain-image" src="" alt="Time Domain Signal" style="max-width: 100%; display: none;">
+                                        <div id="time-domain-placeholder" class="text-center text-muted">
+                                            <i class="fas fa-chart-line fa-2x mb-2"></i>
+                                            <p>Time domain plot will appear here</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6>Spectrogram</h6>
+                                    <div id="csv-spectrogram-container">
+                                        <img id="csv-spectrogram-image" src="" alt="CSV Spectrogram" style="max-width: 100%; display: none;">
+                                        <div id="csv-spectrogram-placeholder" class="text-center text-muted">
+                                            <i class="fas fa-chart-area fa-2x mb-2"></i>
+                                            <p>Spectrogram will appear here</p>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

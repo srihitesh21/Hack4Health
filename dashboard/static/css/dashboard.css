@@ -91,6 +91,37 @@ body {
     font-size: 2rem;
 }
 
+/* Heart Rate Card Special Styling */
+.heart-rate-card {
+    background: linear-gradient(135deg, rgba(231, 76, 60, 0.1) 0%, rgba(192, 57, 43, 0.1) 100%);
+    border: 2px solid rgba(231, 76, 60, 0.3);
+}
+
+.heart-rate-card:hover {
+    border-color: rgba(231, 76, 60, 0.6);
+    box-shadow: 0 12px 40px rgba(231, 76, 60, 0.2);
+}
+
+.heart-rate-card .card-title {
+    color: #c0392b;
+}
+
+.heart-rate-card h2 {
+    color: #e74c3c;
+    animation: heartbeat 2s infinite;
+}
+
+.heart-rate-card small {
+    color: #e67e22;
+    font-weight: 500;
+}
+
+@keyframes heartbeat {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
 .icon-container {
     display: flex;
     align-items: center;
@@ -101,6 +132,127 @@ body {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
     font-size: 1.5rem;
+}
+
+/* Heart Rate Card Icon */
+.heart-rate-card .icon-container {
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+    animation: pulse 2s infinite;
+}
+
+/* Spectrogram Container */
+#spectrogram-container {
+    min-height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(248, 249, 250, 0.5);
+    border-radius: 10px;
+    border: 2px dashed rgba(52, 152, 219, 0.3);
+}
+
+#spectrogram-placeholder {
+    color: #7f8c8d;
+}
+
+#spectrogram-placeholder i {
+    color: #bdc3c7;
+}
+
+#spectrogram-image {
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* CSV Upload Form */
+#csv-upload-form {
+    background: rgba(248, 249, 250, 0.8);
+    border-radius: 10px;
+    padding: 20px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+#csv-analysis-result {
+    background: rgba(39, 174, 96, 0.1);
+    border: 1px solid rgba(39, 174, 96, 0.3);
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 15px;
+}
+
+#csv-analysis-result h6 {
+    color: #27ae60;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+/* Analysis Cards */
+.analysis-card {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 10px;
+    padding: 15px;
+    text-align: center;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease;
+}
+
+.analysis-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.analysis-card h6 {
+    color: #7f8c8d;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+}
+
+.analysis-card h3 {
+    color: #2c3e50;
+    font-weight: 700;
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+/* Time Domain Container */
+#time-domain-container {
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(248, 249, 250, 0.5);
+    border-radius: 8px;
+    border: 2px dashed rgba(52, 152, 219, 0.3);
+}
+
+#csv-spectrogram-container {
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(248, 249, 250, 0.5);
+    border-radius: 8px;
+    border: 2px dashed rgba(52, 152, 219, 0.3);
+}
+
+#time-domain-placeholder,
+#csv-spectrogram-placeholder {
+    color: #7f8c8d;
+}
+
+#time-domain-placeholder i,
+#csv-spectrogram-placeholder i {
+    color: #bdc3c7;
+}
+
+#time-domain-image,
+#csv-spectrogram-image {
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* Chart Cards */
@@ -283,4 +435,288 @@ body {
 
 @keyframes spin {
     to { transform: rotate(360deg); }
+}
+
+/* Risk Assessment Cards */
+.risk-card {
+    border-left: 6px solid #ffc107;
+    transition: all 0.3s ease;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.risk-card.high-risk {
+    border-left-color: #dc3545;
+    background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+    box-shadow: 0 6px 12px rgba(220, 53, 69, 0.3);
+    border: 2px solid #dc3545;
+}
+
+.risk-card.low-risk {
+    border-left-color: #28a745;
+    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    box-shadow: 0 6px 12px rgba(40, 167, 69, 0.3);
+    border: 2px solid #28a745;
+}
+
+.risk-card h3, .risk-card h5 {
+    font-weight: 600;
+    margin-bottom: 15px;
+    color: #495057;
+}
+
+.risk-card.high-risk h3, .risk-card.high-risk h5 {
+    color: #721c24;
+}
+
+.risk-card.low-risk h3, .risk-card.low-risk h5 {
+    color: #155724;
+}
+
+.risk-card .value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    text-align: center;
+    margin: 10px 0;
+    padding: 10px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.5);
+    transition: all 0.3s ease;
+}
+
+.risk-card.high-risk .value {
+    color: #dc3545;
+    background: rgba(220, 53, 69, 0.1);
+}
+
+.risk-card.low-risk .value {
+    color: #28a745;
+    background: rgba(40, 167, 69, 0.1);
+}
+
+.risk-indicator {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    margin: 15px auto 0;
+    background-color: #6c757d;
+    transition: all 0.3s ease;
+    border: 3px solid #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.risk-indicator.high-risk {
+    background-color: #dc3545;
+    box-shadow: 0 0 15px rgba(220, 53, 69, 0.7);
+    animation: pulse 2s infinite;
+    border-color: #dc3545;
+}
+
+.risk-indicator.low-risk {
+    background-color: #28a745;
+    box-shadow: 0 0 15px rgba(40, 167, 69, 0.7);
+    border-color: #28a745;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 15px rgba(220, 53, 69, 0.7);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 0 25px rgba(220, 53, 69, 0.9);
+        transform: scale(1.1);
+    }
+    100% {
+        box-shadow: 0 0 15px rgba(220, 53, 69, 0.7);
+        transform: scale(1);
+    }
+}
+
+/* Emergency Services Section */
+.section {
+    margin-bottom: 2rem;
+}
+
+.section h2 {
+    color: #2c3e50;
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.cards-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.hospital-info {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+}
+
+.hospital-info h3 {
+    color: white;
+    margin-bottom: 1rem;
+}
+
+.location-input {
+    margin-bottom: 1rem;
+}
+
+.location-input input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.location-input input::placeholder {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.location-input button {
+    width: 100%;
+    padding: 0.75rem;
+    background: rgba(255, 255, 255, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.location-input button:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+}
+
+.map-container {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    border: none;
+    box-shadow: 0 8px 32px rgba(240, 147, 251, 0.3);
+}
+
+.map-container h3 {
+    color: white;
+    margin-bottom: 1rem;
+}
+
+#hospitalInfo {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+#hospitalInfo p {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.9rem;
+}
+
+.hospital-details {
+    margin-top: 1rem;
+}
+
+.hospital-details h4 {
+    color: white;
+    margin-bottom: 0.5rem;
+    font-size: 1.1rem;
+}
+
+.hospital-details p {
+    margin: 0.25rem 0;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.85rem;
+}
+
+.hospital-details .distance {
+    font-weight: 600;
+    color: #ffeb3b;
+}
+
+.hospital-details .phone {
+    color: #4caf50;
+    font-weight: 600;
+}
+
+/* Form Sections */
+.form-section {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 25px;
+    margin-bottom: 25px;
+    border-left: 4px solid #007bff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.form-section h4 {
+    color: #2c3e50;
+    margin-bottom: 15px;
+    font-weight: 600;
+}
+
+.form-section h4 i {
+    margin-right: 10px;
+}
+
+.form-section .text-muted {
+    color: #6c757d !important;
+    font-size: 0.9rem;
+    margin-bottom: 20px;
+}
+
+/* Checkbox Styling */
+.form-check {
+    margin-bottom: 12px;
+    padding-left: 0;
+}
+
+.form-check-input {
+    margin-right: 10px;
+    transform: scale(1.2);
+}
+
+.form-check-input:checked {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+.form-check-label {
+    font-weight: 500;
+    color: #495057;
+    cursor: pointer;
+    padding-left: 5px;
+}
+
+.form-check-label:hover {
+    color: #007bff;
+}
+
+/* Symptoms Section */
+.form-section h4 .text-warning {
+    color: #ffc107 !important;
+}
+
+/* Medical History Section */
+.form-section h4 .text-info {
+    color: #17a2b8 !important;
+}
+
+/* Risk Factors Section */
+.form-section h4 .text-danger {
+    color: #dc3545 !important;
 } 

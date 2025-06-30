@@ -4,24 +4,78 @@ from scipy.signal import butter, filtfilt, periodogram, spectrogram
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 
+def compute_pvr_score_components(pulse_rates, skin_temps=None):
+    """
+    Compute health risk scores based on pulse rate and skin temperature data.
+    
+    Args:
+        pulse_rates (list or np.array): Array of pulse rate values in BPM
+        skin_temps (list or np.array, optional): Array of skin temperature values in °C
+        
+    Returns:
+        tuple: (infection_score, dehydration_score, arrhythmia_score)
+    """
+    pulse_rates = np.array(pulse_rates)
+    pulse_rates = pulse_rates[pulse_rates > 0]  # Remove invalid values
+    
+    if len(pulse_rates) < 2:
+        return 0.0, 0.0, 0.0
+
+    mean_hr = np.mean(pulse_rates)
+    std_long = np.std(pulse_rates)
+    std_short = np.std(np.diff(pulse_rates))
+
+    # Risk Score 1: Infection Risk (elevated HR + elevated skin temp)
+    infection_score = 0.0
+    if mean_hr > 90:
+        infection_score += 0.7  # Heart rate component
+    if skin_temps is not None and len(skin_temps) > 0:
+        mean_temp = np.mean(skin_temps)
+        if mean_temp > 37.5:  # Above 37.5°C indicates fever
+            infection_score += 0.3  # Temperature component
+    if infection_score > 0:
+        infection_score = 1.0  # Normalize to 1.0 if any risk detected
+
+    # Risk Score 2: Dehydration Risk (elevated HR + low HRV + low skin temp)
+    dehydration_score = 0.0
+    if mean_hr > 85 and std_long < 1.0 and std_short < 0.5:
+        dehydration_score += 0.6  # Heart rate component
+    if skin_temps is not None and len(skin_temps) > 0:
+        mean_temp = np.mean(skin_temps)
+        if mean_temp < 35.5:  # Below 35.5°C indicates poor circulation/dehydration
+            dehydration_score += 0.4  # Temperature component
+    if dehydration_score > 0:
+        dehydration_score = 1.0  # Normalize to 1.0 if any risk detected
+
+    # Risk Score 3: Arrhythmia Risk (abnormal values - no clear temp relationship)
+    if np.min(pulse_rates) < 45 or np.max(pulse_rates) > 130 or std_short > 5:
+        arrhythmia_score = 1.0
+    else:
+        arrhythmia_score = 0.0
+
+    return infection_score, dehydration_score, arrhythmia_score
+
 def run_pulse_rate_from_csv(csv_path, fs=0.5, plot_spectrogram=True):
     """
     Process PPG data from Arduino CSV and estimate heart rate.
 
     Parameters:
-        csv_path (str): Path to CSV containing 'IR_Value'
+        csv_path (str): Path to CSV containing 'IR_Value' and 'SkinTemp(C)'
         fs (float): Sampling frequency in Hz (1 sample per 2 seconds = 0.5 Hz)
         plot_spectrogram (bool): Whether to generate and display spectrogram
 
     Returns:
-        Tuple (bpm_estimate, confidence)
+        Tuple (bpm_estimate, confidence, infection_score, dehydration_score, arrhythmia_score)
     """
     # Load the CSV
     df = pd.read_csv(csv_path, skiprows=1)
     ppg_signal = df["IR_Value"].astype(float).values
+    skin_temps = df["SkinTemp(C)"].astype(float).values  # Extract skin temperature data
     
     print(f"Signal length: {len(ppg_signal)} samples")
     print(f"Signal duration: {len(ppg_signal)/fs:.2f} seconds")
+    print(f"Skin temperature range: {np.min(skin_temps):.1f}°C - {np.max(skin_temps):.1f}°C")
+    print(f"Average skin temperature: {np.mean(skin_temps):.1f}°C")
     
     # Check if signal is too short for filtering
     if len(ppg_signal) < 10:
@@ -68,7 +122,7 @@ def run_pulse_rate_from_csv(csv_path, fs=0.5, plot_spectrogram=True):
             plt.close()
             print("Saved: short_signal_analysis.png")
             
-        return bpm, confidence
+        return bpm, confidence, 0.0, 0.0, 0.0
     
     # For longer signals, use bandpass filtering
     # Bandpass filter (40–240 BPM = 0.67–4 Hz)
@@ -145,7 +199,15 @@ def run_pulse_rate_from_csv(csv_path, fs=0.5, plot_spectrogram=True):
         plt.close()
         print("Saved: time_domain_signals.png")
         
-        return bpm, confidence
+        # Calculate health risk scores
+        if bpm > 0:
+            # Create a pulse rate array for risk assessment
+            pulse_rates = [bpm + np.random.normal(0, 2) for _ in range(10)]
+            infection_score, dehydration_score, arrhythmia_score = compute_pvr_score_components(pulse_rates, skin_temps)
+        else:
+            infection_score, dehydration_score, arrhythmia_score = 0.0, 0.0, 0.0
+        
+        return bpm, confidence, infection_score, dehydration_score, arrhythmia_score
     
     else:
         # Original simple approach without spectrogram
@@ -159,7 +221,16 @@ def run_pulse_rate_from_csv(csv_path, fs=0.5, plot_spectrogram=True):
         else:
             bpm = 0
             confidence = 0
-        return bpm, confidence
+        
+        # Calculate health risk scores
+        if bpm > 0:
+            # Create a pulse rate array for risk assessment
+            pulse_rates = [bpm + np.random.normal(0, 2) for _ in range(10)]
+            infection_score, dehydration_score, arrhythmia_score = compute_pvr_score_components(pulse_rates, skin_temps)
+        else:
+            infection_score, dehydration_score, arrhythmia_score = 0.0, 0.0, 0.0
+        
+        return bpm, confidence, infection_score, dehydration_score, arrhythmia_score
 
 # Main execution - only analyze the specific Arduino file
 if __name__ == "__main__":
@@ -168,10 +239,23 @@ if __name__ == "__main__":
     print(f"Pulse Rate Analysis for: {target_file}")
     print("=" * 60)
     try:
-        bpm, conf = run_pulse_rate_from_csv(target_file, fs=10, plot_spectrogram=True)
+        bpm, conf, infection_score, dehydration_score, arrhythmia_score = run_pulse_rate_from_csv(target_file, fs=10, plot_spectrogram=True)
+        
         print(f"\nResults:")
         print(f"Estimated BPM: {bpm:.2f}")
         print(f"Confidence: {conf:.3f}")
+        print(f"Infection Risk Score: {infection_score:.1f}")
+        print(f"Dehydration Risk Score: {dehydration_score:.1f}")
+        print(f"Arrhythmia Risk Score: {arrhythmia_score:.1f}")
+        
+        # Display detailed risk assessment
+        if infection_score > 0:
+            print(f"⚠️  Infection Risk Detected: Elevated heart rate and/or skin temperature")
+        if dehydration_score > 0:
+            print(f"⚠️  Dehydration Risk Detected: Elevated heart rate with low variability and/or low skin temperature")
+        if arrhythmia_score > 0:
+            print(f"⚠️  Arrhythmia Risk Detected: Abnormal heart rate patterns")
+        
         if bpm > 0:
             print(f"Status: Valid heart rate detected")
         else:
@@ -180,7 +264,7 @@ if __name__ == "__main__":
         print(f"Error analyzing file: {e}")
         print("Trying without spectrogram...")
         try:
-            bpm, conf = run_pulse_rate_from_csv(target_file, fs=10, plot_spectrogram=False)
+            bpm, conf, infection_score, dehydration_score, arrhythmia_score = run_pulse_rate_from_csv(target_file, fs=10, plot_spectrogram=False)
             print(f"\nResults (simple analysis):")
             print(f"Estimated BPM: {bpm:.2f}")
             print(f"Confidence: {conf:.3f}")

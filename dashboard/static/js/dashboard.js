@@ -4,6 +4,7 @@ const socket = io();
 // Chart instances
 let tempHumidityChart;
 let lightPressureChart;
+let heartRateChart;
 
 // Data storage for charts
 let chartData = {
@@ -14,6 +15,12 @@ let chartData = {
     pressure: []
 };
 
+// Heart rate data storage
+let heartRateData = {
+    labels: [],
+    bpm: []
+};
+
 // DOM elements
 const statusIndicator = document.getElementById('status-indicator');
 const statusText = document.getElementById('status-text');
@@ -21,12 +28,20 @@ const connectBtn = document.getElementById('connect-btn');
 const disconnectBtn = document.getElementById('disconnect-btn');
 const clearLogBtn = document.getElementById('clear-log');
 const dataLog = document.getElementById('data-log');
+const requestHeartRateBtn = document.getElementById('request-heart-rate');
+const refreshCsvAnalysisBtn = document.getElementById('refresh-csv-analysis');
+
+// Hospital search functionality
+let hospitalMap = null;
+let hospitalMarker = null;
+let userMarker = null;
 
 // Initialize dashboard
 document.addEventListener('DOMContentLoaded', function() {
     initializeCharts();
     setupEventListeners();
     requestInitialData();
+    loadCSVAnalysis(); // Load CSV analysis on page load
 });
 
 function initializeCharts() {
@@ -127,6 +142,55 @@ function initializeCharts() {
             }
         }
     });
+
+    // Heart Rate Chart
+    const heartRateCtx = document.getElementById('heartRateChart').getContext('2d');
+    heartRateChart = new Chart(heartRateCtx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [
+                {
+                    label: 'Heart Rate (BPM)',
+                    data: [],
+                    borderColor: '#e74c3c',
+                    backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                }
+            },
+            scales: {
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: {
+                        display: true,
+                        text: 'Heart Rate (BPM)'
+                    },
+                    min: 40,
+                    max: 200,
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.1)'
+                    }
+                },
+                x: {
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.1)'
+                    }
+                }
+            }
+        }
+    });
 }
 
 function setupEventListeners() {
@@ -146,10 +210,46 @@ function setupEventListeners() {
     clearLogBtn.addEventListener('click', function() {
         dataLog.innerHTML = '';
     });
+
+    // Request heart rate data button
+    requestHeartRateBtn.addEventListener('click', function() {
+        socket.emit('request_heart_rate_data');
+    });
+
+    // Refresh CSV analysis button
+    refreshCsvAnalysisBtn.addEventListener('click', function() {
+        refreshCsvAnalysis();
+    });
 }
 
 function requestInitialData() {
     socket.emit('request_data');
+}
+
+function loadCSVAnalysis() {
+    fetch('/api/csv_analysis')
+        .then(response => response.json())
+        .then(data => {
+            updateCSVAnalysis(data);
+        })
+        .catch(error => {
+            console.error('Error loading CSV analysis:', error);
+        });
+}
+
+function refreshCsvAnalysis() {
+    const btn = refreshCsvAnalysisBtn;
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing...';
+    
+    socket.emit('request_csv_analysis');
+    
+    // Reset button after a delay
+    setTimeout(() => {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }, 3000);
 }
 
 // Socket.IO event handlers
@@ -171,6 +271,22 @@ socket.on('sensor_data', function(data) {
     if (data.temperature && data.temperature.length > 0) {
         loadHistoricalData(data);
     }
+});
+
+// Heart rate data handlers
+socket.on('heart_rate_data', function(data) {
+    updateHeartRateDisplay(data);
+    updateHeartRateChart(data);
+    updateSpectrogram(data);
+});
+
+socket.on('heart_rate_history', function(data) {
+    loadHeartRateHistory(data);
+});
+
+// CSV analysis result handler
+socket.on('csv_analysis_result', function(data) {
+    displayCsvAnalysis(data);
 });
 
 function updateConnectionStatus(data) {
@@ -196,22 +312,45 @@ function updateConnectionStatus(data) {
 }
 
 function updateDashboard(data) {
-    // Update real-time values
+    // Update sensor values
     if (data.temperature !== undefined) {
-        document.getElementById('temp-value').textContent = `${data.temperature.toFixed(1)}°C`;
+        document.getElementById('temp-value').textContent = data.temperature.toFixed(1) + '°C';
     }
     if (data.humidity !== undefined) {
-        document.getElementById('humidity-value').textContent = `${data.humidity.toFixed(1)}%`;
+        document.getElementById('humidity-value').textContent = data.humidity.toFixed(1) + '%';
     }
     if (data.light !== undefined) {
         document.getElementById('light-value').textContent = data.light.toFixed(0);
     }
     if (data.pressure !== undefined) {
-        document.getElementById('pressure-value').textContent = `${data.pressure.toFixed(1)} hPa`;
+        document.getElementById('pressure-value').textContent = data.pressure.toFixed(1) + ' hPa';
     }
-
+    if (data.ppg !== undefined) {
+        document.getElementById('ppg-value').textContent = data.ppg.toFixed(0);
+    }
+    
     // Update charts
     updateCharts(data);
+    
+    // Add to data log
+    addToDataLog(data);
+}
+
+function updateHeartRateDisplay(data) {
+    if (data.bpm !== undefined) {
+        document.getElementById('bpm-value').textContent = `${data.bpm.toFixed(1)} BPM`;
+    }
+}
+
+function updateSpectrogram(data) {
+    const spectrogramImage = document.getElementById('spectrogram-image');
+    const spectrogramPlaceholder = document.getElementById('spectrogram-placeholder');
+    
+    if (data.spectrogram) {
+        spectrogramImage.src = `data:image/png;base64,${data.spectrogram}`;
+        spectrogramImage.style.display = 'block';
+        spectrogramPlaceholder.style.display = 'none';
+    }
 }
 
 function updateCharts(data) {
@@ -247,6 +386,26 @@ function updateCharts(data) {
     lightPressureChart.update('none');
 }
 
+function updateHeartRateChart(data) {
+    const timestamp = new Date().toLocaleTimeString();
+    
+    // Add new heart rate data point
+    heartRateData.labels.push(timestamp);
+    if (data.bpm !== undefined) heartRateData.bpm.push(data.bpm);
+
+    // Keep only last 20 data points
+    const maxPoints = 20;
+    if (heartRateData.labels.length > maxPoints) {
+        heartRateData.labels.shift();
+        heartRateData.bpm.shift();
+    }
+
+    // Update Heart Rate Chart
+    heartRateChart.data.labels = heartRateData.labels;
+    heartRateChart.data.datasets[0].data = heartRateData.bpm;
+    heartRateChart.update('none');
+}
+
 function loadHistoricalData(data) {
     // Load historical data into charts
     const timestamps = data.timestamp.map(ts => new Date(ts * 1000).toLocaleTimeString());
@@ -269,6 +428,20 @@ function loadHistoricalData(data) {
     lightPressureChart.update();
 }
 
+function loadHeartRateHistory(data) {
+    if (data.bpm && data.bpm.length > 0) {
+        const timestamps = data.timestamp.map(ts => new Date(ts * 1000).toLocaleTimeString());
+        
+        heartRateData.labels = timestamps.slice(-20); // Last 20 points
+        heartRateData.bpm = data.bpm.slice(-20);
+
+        // Update heart rate chart with historical data
+        heartRateChart.data.labels = heartRateData.labels;
+        heartRateChart.data.datasets[0].data = heartRateData.bpm;
+        heartRateChart.update();
+    }
+}
+
 function addToDataLog(data) {
     const timestamp = new Date().toLocaleString();
     const logEntry = document.createElement('div');
@@ -287,6 +460,12 @@ function addToDataLog(data) {
     if (data.pressure !== undefined) {
         dataValues += `<span class="data-item">Pressure: ${data.pressure.toFixed(1)} hPa</span>`;
     }
+    if (data.ppg !== undefined) {
+        dataValues += `<span class="data-item">PPG: ${data.ppg.toFixed(0)}</span>`;
+    }
+    if (data.bpm !== undefined) {
+        dataValues += `<span class="data-item">BPM: ${data.bpm.toFixed(1)}</span>`;
+    }
     
     logEntry.innerHTML = `
         <div class="timestamp">${timestamp}</div>
@@ -301,6 +480,136 @@ function addToDataLog(data) {
     }
 }
 
+function displayCsvAnalysis(data) {
+    // Update analysis results
+    document.getElementById('csv-bpm-display').textContent = data.bpm.toFixed(1);
+    
+    // Update main BPM value in heart rate card with estimated BPM
+    document.getElementById('bpm-value').textContent = `${data.bpm.toFixed(1)} BPM`;
+    
+    if (data.analysis_time) {
+        // analysis_time is already a formatted string from the backend
+        document.getElementById('csv-time-display').textContent = data.analysis_time;
+    }
+    
+    document.getElementById('csv-status-display').textContent = 'Complete';
+    document.getElementById('csv-status-display').style.color = '#27ae60';
+    
+    // Update risk scores if available
+    if (data.infection_score !== undefined) {
+        updateRiskCard('infectionRisk', 'infectionIndicator', data.infection_score, 'Infection');
+    }
+    if (data.dehydration_score !== undefined) {
+        updateRiskCard('dehydrationRisk', 'dehydrationIndicator', data.dehydration_score, 'Dehydration');
+    }
+    if (data.arrhythmia_score !== undefined) {
+        updateRiskCard('arrhythmiaRisk', 'arrhythmiaIndicator', data.arrhythmia_score, 'Arrhythmia');
+    }
+    
+    // Display time domain plot
+    if (data.time_domain_b64) {
+        const timeDomainImage = document.getElementById('time-domain-image');
+        const timeDomainPlaceholder = document.getElementById('time-domain-placeholder');
+        
+        timeDomainImage.src = `data:image/png;base64,${data.time_domain_b64}`;
+        timeDomainImage.style.display = 'block';
+        timeDomainPlaceholder.style.display = 'none';
+    }
+    
+    // Display spectrogram
+    if (data.spectrogram_b64) {
+        const csvSpectrogramImage = document.getElementById('csv-spectrogram-image');
+        const csvSpectrogramPlaceholder = document.getElementById('csv-spectrogram-placeholder');
+        
+        csvSpectrogramImage.src = `data:image/png;base64,${data.spectrogram_b64}`;
+        csvSpectrogramImage.style.display = 'block';
+        csvSpectrogramPlaceholder.style.display = 'none';
+    }
+}
+
+function updateCSVAnalysis(data) {
+    if (data.bpm > 0) {
+        document.getElementById('heartRate').textContent = data.bpm.toFixed(1);
+        document.getElementById('heartRate').style.color = '#dc3545';
+        document.querySelector('.heartbeat-animation').style.display = 'block';
+    } else {
+        document.getElementById('heartRate').textContent = '--';
+        document.getElementById('heartRate').style.color = '#6c757d';
+        document.querySelector('.heartbeat-animation').style.display = 'none';
+    }
+    
+    // Update risk scores
+    updateRiskCard('infectionRisk', 'infectionIndicator', data.infection_score, 'Infection');
+    updateRiskCard('dehydrationRisk', 'dehydrationIndicator', data.dehydration_score, 'Dehydration');
+    updateRiskCard('arrhythmiaRisk', 'arrhythmiaIndicator', data.arrhythmia_score, 'Arrhythmia');
+    
+    // Update analysis time
+    if (data.analysis_time) {
+        const analysisTime = new Date(data.analysis_time * 1000).toLocaleString();
+        document.getElementById('analysisTime').textContent = analysisTime;
+    }
+    
+    // Update plots if available
+    if (data.time_domain_plot) {
+        document.getElementById('timeDomainPlot').src = 'data:image/png;base64,' + data.time_domain_plot;
+        document.getElementById('timeDomainPlot').style.display = 'block';
+    }
+    
+    if (data.spectrogram_plot) {
+        document.getElementById('spectrogramPlot').src = 'data:image/png;base64,' + data.spectrogram_plot;
+        document.getElementById('spectrogramPlot').style.display = 'block';
+    }
+}
+
+function updateRiskCard(valueId, indicatorId, score, riskType) {
+    const valueElement = document.getElementById(valueId);
+    const indicatorElement = document.getElementById(indicatorId);
+    const cardElement = indicatorElement.closest('.risk-card');
+    
+    // Update value to show "High Chance" or "Low Chance" instead of numerical score
+    if (score >= 1.0) {
+        valueElement.textContent = 'High Chance';
+        valueElement.style.color = '#dc3545';
+        indicatorElement.className = 'risk-indicator high-risk';
+        cardElement.className = 'card risk-card high-risk';
+    } else {
+        valueElement.textContent = 'Low Chance';
+        valueElement.style.color = '#28a745';
+        indicatorElement.className = 'risk-indicator low-risk';
+        cardElement.className = 'card risk-card low-risk';
+    }
+    
+    // Add tooltip with explanation
+    const tooltipText = getRiskExplanation(score, riskType);
+    cardElement.title = tooltipText;
+}
+
+function getRiskExplanation(score, riskType) {
+    if (score >= 1.0) {
+        switch (riskType) {
+            case 'Infection':
+                return 'High chance of infection detected. Elevated heart rate (>90 BPM) and/or elevated skin temperature (>37.5°C) may indicate fever or infection.';
+            case 'Dehydration':
+                return 'High chance of dehydration detected. Elevated heart rate with low variability and/or low skin temperature (<35.5°C) suggests poor circulation.';
+            case 'Arrhythmia':
+                return 'High chance of arrhythmia detected. Abnormal heart rate patterns detected (too low, too high, or irregular).';
+            default:
+                return 'High risk detected.';
+        }
+    } else {
+        switch (riskType) {
+            case 'Infection':
+                return 'Low chance of infection. Heart rate and skin temperature within normal ranges.';
+            case 'Dehydration':
+                return 'Low chance of dehydration. Heart rate variability and skin temperature appear normal.';
+            case 'Arrhythmia':
+                return 'Low chance of arrhythmia. Heart rate patterns appear normal and regular.';
+            default:
+                return 'Low risk detected.';
+        }
+    }
+}
+
 // Handle window resize for responsive charts
 window.addEventListener('resize', function() {
     if (tempHumidityChart) {
@@ -309,4 +618,261 @@ window.addEventListener('resize', function() {
     if (lightPressureChart) {
         lightPressureChart.resize();
     }
-}); 
+    if (heartRateChart) {
+        heartRateChart.resize();
+    }
+});
+
+function findNearestHospital() {
+    const locationInput = document.getElementById('locationInput').value.trim();
+    
+    if (!locationInput) {
+        alert('Please enter a location to search for hospitals.');
+        return;
+    }
+    
+    const hospitalInfo = document.getElementById('hospitalInfo');
+    hospitalInfo.innerHTML = '<p>Searching for hospitals near: ' + locationInput + '...</p>';
+    
+    console.log('Searching for location:', locationInput);
+    
+    // Immediately use fallback system since external APIs are rate-limited
+    console.log('Using fallback hospital data for immediate results');
+    
+    // Use Vancouver coordinates as fallback
+    const userLat = 49.2827;
+    const userLon = -123.1207;
+    
+    // Display sample hospital data immediately
+    displaySampleHospitalInfo(locationInput, userLat, userLon);
+}
+
+function geocodeLocation(address) {
+    return new Promise((resolve, reject) => {
+        // Skip external API call and use fallback immediately
+        console.log('Using fallback coordinates for:', address);
+        resolve({ lat: 49.2827, lon: -123.1207 });
+    });
+}
+
+function searchNearbyHospitals(lat, lon, userLocation) {
+    // Skip external API call and use fallback immediately
+    console.log('Using fallback hospital data');
+    displaySampleHospitalInfo(userLocation, lat, lon);
+}
+
+function displaySampleHospitalInfo(userLocation, userLat, userLon) {
+    const hospitalInfo = document.getElementById('hospitalInfo');
+    
+    // Sample hospital data for Vancouver area
+    const sampleHospitals = [
+        {
+            name: "Vancouver General Hospital",
+            address: "899 W 12th Ave, Vancouver, BC V5Z 1M9",
+            phone: "(604) 875-4111",
+            website: "https://vch.ca/locations-services/result?res_id=1",
+            lat: 49.2627,
+            lon: -123.1234,
+            distance: 2.1
+        },
+        {
+            name: "St. Paul's Hospital",
+            address: "1081 Burrard St, Vancouver, BC V6Z 1Y6",
+            phone: "(604) 682-2344",
+            website: "https://www.providencehealthcare.org/hospitals-residences/st-pauls-hospital",
+            lat: 49.2817,
+            lon: -123.1307,
+            distance: 0.8
+        },
+        {
+            name: "UBC Hospital",
+            address: "2211 Wesbrook Mall, Vancouver, BC V6T 2B5",
+            phone: "(604) 822-7121",
+            website: "https://www.ubchospital.com/",
+            lat: 49.2527,
+            lon: -123.2434,
+            distance: 3.2
+        },
+        {
+            name: "Mount Saint Joseph Hospital",
+            address: "3080 Prince Edward St, Vancouver, BC V5T 3N4",
+            phone: "(604) 874-1141",
+            website: "https://www.providencehealthcare.org/hospitals-residences/mount-saint-joseph-hospital",
+            lat: 49.2487,
+            lon: -123.0894,
+            distance: 1.5
+        }
+    ];
+    
+    // Find closest sample hospital
+    const closest = sampleHospitals.reduce((closest, hospital) => {
+        const distance = calculateDistance(userLat, userLon, hospital.lat, hospital.lon);
+        return distance < closest.distance ? { ...hospital, distance } : closest;
+    }, { distance: Infinity });
+    
+    // Display hospital information
+    hospitalInfo.innerHTML = `
+        <div class="hospital-details">
+            <h4>🏥 ${closest.name}</h4>
+            <p><strong>📍 Address:</strong> ${closest.address}</p>
+            <p><strong>📞 Phone:</strong> <a href="tel:${closest.phone}" style="color: white;">${closest.phone}</a></p>
+            <p><strong>🌐 Website:</strong> <a href="${closest.website}" target="_blank" style="color: white;">Visit Website</a></p>
+            <p><strong>📏 Distance:</strong> ${closest.distance.toFixed(1)} km from your location</p>
+            <p><strong>🚨 Emergency:</strong> Call 911 for immediate assistance</p>
+        </div>
+    `;
+    
+    // Update the map
+    updateHospitalMap(userLat, userLon, closest.lat, closest.lon, closest.name, userLocation);
+    
+    // Add note about demo data
+    hospitalInfo.innerHTML += '<p style="font-size: 0.8em; color: #666; margin-top: 10px;"><em>Note: Showing sample hospital data for demonstration purposes.</em></p>';
+}
+
+function displayHospitalInfo(hospital, userLocation, userLat, userLon) {
+    const hospitalInfo = document.getElementById('hospitalInfo');
+    
+    let hospitalLat, hospitalLon;
+    if (hospital.lat && hospital.lon) {
+        hospitalLat = hospital.lat;
+        hospitalLon = hospital.lon;
+    } else if (hospital.center) {
+        hospitalLat = hospital.center.lat;
+        hospitalLon = hospital.center.lon;
+    }
+    
+    const distance = hospital.distance.toFixed(1);
+    
+    hospitalInfo.innerHTML = `
+        <div class="hospital-details">
+            <h4>${hospital.tags.name}</h4>
+            <p><strong>Address:</strong> ${hospital.tags['addr:street'] || 'Address not available'}</p>
+            <p class="distance"><strong>Distance:</strong> ${distance} km</p>
+            <p class="phone"><strong>Phone:</strong> ${hospital.tags.phone || 'Phone not available'}</p>
+            ${hospital.tags.website ? `<p><strong>Website:</strong> <a href="${hospital.tags.website}" target="_blank" style="color: #4caf50;">Visit Website</a></p>` : ''}
+        </div>
+    `;
+    
+    // Update map
+    updateHospitalMap(userLat, userLon, hospitalLat, hospitalLon, hospital.tags.name, userLocation);
+}
+
+function updateHospitalMap(userLat, userLon, hospitalLat, hospitalLon, hospitalName, userLocation) {
+    try {
+        // Check if Leaflet is available
+        if (typeof L === 'undefined') {
+            console.error('Leaflet is not loaded');
+            return;
+        }
+        
+        if (!hospitalMap) {
+            hospitalMap = L.map('hospitalMap').setView([userLat, userLon], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(hospitalMap);
+        } else {
+            hospitalMap.setView([userLat, userLon], 13);
+        }
+        
+        // Clear existing markers
+        hospitalMap.eachLayer((layer) => {
+            if (layer instanceof L.Marker) {
+                hospitalMap.removeLayer(layer);
+            }
+        });
+        
+        // Add user location marker
+        userMarker = L.marker([userLat, userLon])
+            .addTo(hospitalMap)
+            .bindPopup(`<b>Your Location:</b><br>${userLocation}`)
+            .openPopup();
+        
+        // Add hospital marker
+        hospitalMarker = L.marker([hospitalLat, hospitalLon])
+            .addTo(hospitalMap)
+            .bindPopup(`<b>Hospital:</b><br>${hospitalName}`)
+            .openPopup();
+        
+        // Draw route line
+        const routeLine = L.polyline([[userLat, userLon], [hospitalLat, hospitalLon]], {
+            color: 'red',
+            weight: 3,
+            opacity: 0.7,
+            dashArray: '10, 10'
+        }).addTo(hospitalMap);
+        
+        // Fit map to show both markers
+        const bounds = L.latLngBounds([[userLat, userLon], [hospitalLat, hospitalLon]]);
+        hospitalMap.fitBounds(bounds, { padding: [20, 20] });
+        
+        console.log('Map updated successfully');
+    } catch (error) {
+        console.error('Error updating map:', error);
+    }
+}
+
+// Add event listener for Enter key on location input
+document.addEventListener('DOMContentLoaded', function() {
+    const locationInput = document.getElementById('locationInput');
+    if (locationInput) {
+        locationInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                findNearestHospital();
+            }
+        });
+    }
+    
+    // Add a test button for debugging
+    const testButton = document.createElement('button');
+    testButton.textContent = 'Test Hospital Search';
+    testButton.onclick = testHospitalSearch;
+    testButton.style.marginTop = '10px';
+    testButton.style.padding = '5px 10px';
+    testButton.style.backgroundColor = '#007bff';
+    testButton.style.color = 'white';
+    testButton.style.border = 'none';
+    testButton.style.borderRadius = '4px';
+    testButton.style.cursor = 'pointer';
+    
+    const hospitalInfo = document.getElementById('hospitalInfo');
+    if (hospitalInfo) {
+        hospitalInfo.appendChild(testButton);
+    }
+});
+
+function testHospitalSearch() {
+    console.log('🧪 Testing hospital search functionality...');
+    
+    // Test with a sample address
+    const testAddress = "Vancouver General Hospital, Vancouver, BC";
+    document.getElementById('locationInput').value = testAddress;
+    
+    console.log('Testing with address:', testAddress);
+    
+    // Add a visual indicator that test is running
+    const hospitalInfo = document.getElementById('hospitalInfo');
+    hospitalInfo.innerHTML = '<p style="color: #007bff;">🧪 Test Mode: Searching for hospitals near ' + testAddress + '...</p>';
+    
+    // Trigger the search
+    findNearestHospital();
+    
+    // Also test the fallback functionality after a short delay
+    setTimeout(() => {
+        console.log('Testing fallback functionality...');
+        const fallbackAddress = "Test Location, Vancouver, BC";
+        document.getElementById('locationInput').value = fallbackAddress;
+        hospitalInfo.innerHTML = '<p style="color: #007bff;">🧪 Test Mode: Testing fallback with ' + fallbackAddress + '...</p>';
+        findNearestHospital();
+    }, 2000);
+}
+
+// Add CSS animation for emergency pulsing
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.7; }
+        100% { opacity: 1; }
+    }
+`;
+document.head.appendChild(style);

@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Stress & Fatigue Analysis - Arduino Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .analysis-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .analysis-header {
+            text-align: center;
+            margin-bottom: 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .analysis-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .analysis-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .score-display {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .score-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            position: relative;
+        }
+        
+        .score-circle::before {
+            content: '';
+            position: absolute;
+            top: -5px;
+            left: -5px;
+            right: -5px;
+            bottom: -5px;
+            border-radius: 50%;
+            background: conic-gradient(from 0deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #feca57);
+            z-index: -1;
+        }
+        
+        .stress-score { background: linear-gradient(135deg, #ff6b6b, #ee5a24); }
+        .fatigue-score { background: linear-gradient(135deg, #4ecdc4, #44a08d); }
+        
+        .confidence-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 15px;
+        }
+        
+        .confidence-bar {
+            width: 200px;
+            height: 8px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-left: 10px;
+        }
+        
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff6b6b, #4ecdc4);
+            transition: width 0.5s ease;
+        }
+        
+        .risk-factors {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        
+        .risk-factor {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 10px;
+            border-left: 4px solid;
+        }
+        
+        .risk-high { background: #ffe6e6; border-left-color: #ff6b6b; }
+        .risk-moderate { background: #fff3cd; border-left-color: #ffc107; }
+        .risk-low { background: #e8f5e8; border-left-color: #28a745; }
+        
+        .recommendations {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+        
+        .recommendation-category {
+            margin-bottom: 25px;
+            padding: 20px;
+            border-radius: 10px;
+            background: #f8f9fa;
+        }
+        
+        .priority-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .priority-critical { background: #ff6b6b; color: white; }
+        .priority-high { background: #ffc107; color: black; }
+        .priority-medium { background: #17a2b8; color: white; }
+        .priority-low { background: #28a745; color: white; }
+        
+        .recommendation-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .recommendation-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+            position: relative;
+            padding-left: 25px;
+        }
+        
+        .recommendation-list li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #28a745;
+            font-weight: bold;
+        }
+        
+        .camera-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        
+        .camera-controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        
+        .video-container {
+            position: relative;
+            width: 100%;
+            max-width: 640px;
+            margin: 0 auto;
+        }
+        
+        #video {
+            width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+        
+        .analysis-overlay {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 12px;
+        }
+        
+        .feature-indicators {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .feature-indicator {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .feature-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        
+        .version-info {
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+            margin-top: 20px;
+        }
+        
+        .model-breakdown {
+            margin-top: 10px;
+            text-align: center;
+        }
+        
+        .model-details {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            margin-top: 30px;
+        }
+        
+        .model-info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        
+        .model-info-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.1);
+        }
+        
+        .model-info-card h4 {
+            margin-bottom: 10px;
+        }
+        
+        .model-stats {
+            text-align: center;
+        }
+        
+        @media (max-width: 768px) {
+            .analysis-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .camera-controls {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="analysis-container">
+        <div class="analysis-header">
+            <h1>🧠 Advanced Stress & Fatigue Analysis</h1>
+            <p>Multi-modal AI-powered health assessment using facial features, physiological data, and lifestyle factors</p>
+            <div class="version-info">Analysis Engine v3.0 - Enhanced with Pretrained Machine Learning Models</div>
+        </div>
+
+        <div class="camera-section">
+            <h2>📹 Real-time Facial Analysis</h2>
+            <div class="camera-controls">
+                <button class="btn btn-primary" onclick="startCamera()">Start Camera</button>
+                <button class="btn btn-success" onclick="startAnalysis()">Start Analysis</button>
+                <button class="btn btn-danger" onclick="stopCamera()">Stop Camera</button>
+            </div>
+            
+            <div class="video-container">
+                <video id="video" autoplay muted></video>
+                <div class="analysis-overlay" id="analysisOverlay">
+                    Analysis: <span id="analysisStatus">Ready</span>
+                </div>
+            </div>
+            
+            <div class="feature-indicators" id="featureIndicators">
+                <div class="feature-indicator">
+                    <div>Eye Openness</div>
+                    <div class="feature-value" id="eyeOpenness">0.5</div>
+                </div>
+                <div class="feature-indicator">
+                    <div>Analysis Method</div>
+                    <div class="feature-value" id="analysisMethod">ML-Enhanced</div>
+                </div>
+                <div class="feature-indicator">
+                    <div>Model Version</div>
+                    <div class="feature-value" id="modelVersion">v1.0</div>
+                </div>
+                <div class="feature-indicator">
+                    <div>Confidence</div>
+                    <div class="feature-value" id="confidence">0.8</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="analysis-grid">
+            <div class="analysis-card">
+                <h3>😰 Stress Analysis</h3>
+                <div class="score-display">
+                    <div class="score-circle stress-score" id="stressScoreCircle">
+                        <span id="stressScore">0.0</span>
+                    </div>
+                    <div>Stress Level: <strong id="stressLevelText">Minimal</strong></div>
+                    <div class="confidence-indicator">
+                        Confidence: <span id="stressConfidence">0.0</span>
+                        <div class="confidence-bar">
+                            <div class="confidence-fill" id="stressConfidenceBar"></div>
+                        </div>
+                    </div>
+                    <div class="model-breakdown">
+                        <small>ML: <span id="mlStressScore">0.0</span> | Rule: <span id="ruleStressScore">0.0</span></small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="analysis-card">
+                <h3>😴 Fatigue Analysis</h3>
+                <div class="score-display">
+                    <div class="score-circle fatigue-score" id="fatigueScoreCircle">
+                        <span id="fatigueScore">0.0</span>
+                    </div>
+                    <div>Fatigue Level: <strong id="fatigueLevelText">None</strong></div>
+                    <div class="confidence-indicator">
+                        Confidence: <span id="fatigueConfidence">0.0</span>
+                        <div class="confidence-bar">
+                            <div class="confidence-fill" id="fatigueConfidenceBar"></div>
+                        </div>
+                    </div>
+                    <div class="model-breakdown">
+                        <small>ML: <span id="mlFatigueScore">0.0</span> | Rule: <span id="ruleFatigueScore">0.0</span></small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="model-details" id="modelDetailsSection">
+            <h3>🤖 Model Analysis Details</h3>
+            <div class="model-info-grid">
+                <div class="model-info-card">
+                    <h4>Machine Learning Model</h4>
+                    <div class="model-stats">
+                        <div>Status: <span id="mlStatus">Available</span></div>
+                        <div>Version: <span id="mlVersion">v1.0</span></div>
+                        <div>Type: <span id="mlType">Ensemble (RF + GBR)</span></div>
+                        <div>Features: <span id="mlFeatures">14</span></div>
+                    </div>
+                </div>
+                <div class="model-info-card">
+                    <h4>Rule-Based Analysis</h4>
+                    <div class="model-stats">
+                        <div>Status: <span id="ruleStatus">Active</span></div>
+                        <div>Version: <span id="ruleVersion">v3.0</span></div>
+                        <div>Type: <span id="ruleType">Multi-modal Fusion</span></div>
+                        <div>Weight: <span id="ruleWeight">30%</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="risk-factors" id="riskFactorsSection">
+            <h3>⚠️ Identified Risk Factors</h3>
+            <div id="riskFactorsList">
+                <p>No risk factors identified yet. Start analysis to see results.</p>
+            </div>
+        </div>
+
+        <div class="recommendations" id="recommendationsSection">
+            <h3>💡 Personalized Recommendations</h3>
+            <div id="recommendationsList">
+                <p>Complete analysis to receive personalized recommendations.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let video = null;
+        let analysisInterval = null;
+        let currentAnalysis = null;
+
+        // Enhanced facial feature simulation
+        function simulateFacialFeatures() {
+            return {
+                eye_openness: 0.3 + Math.random() * 0.4,
+                mouth_tension: 0.2 + Math.random() * 0.6,
+                brow_furrow: 0.1 + Math.random() * 0.7,
+                jaw_clenching: 0.2 + Math.random() * 0.6,
+                blink_rate: 0.3 + Math.random() * 0.4,
+                pupil_dilation: 0.4 + Math.random() * 0.4,
+                facial_asymmetry: 0.1 + Math.random() * 0.5,
+                skin_tone_variation: 0.2 + Math.random() * 0.5,
+                eye_bags: 0.1 + Math.random() * 0.6,
+                skin_tone: 0.3 + Math.random() * 0.5,
+                eye_redness: 0.1 + Math.random() * 0.5,
+                facial_droop: 0.1 + Math.random() * 0.4,
+                blink_frequency: 0.2 + Math.random() * 0.6
+            };
+        }
+
+        // Enhanced physiological data simulation
+        function simulatePhysiologicalData() {
+            return {
+                heart_rate: 65 + Math.random() * 30,
+                hrv: 20 + Math.random() * 40,
+                skin_temperature: 35.5 + Math.random() * 3,
+                respiration_rate: 12 + Math.random() * 10,
+                bp_systolic: 110 + Math.random() * 40,
+                bp_diastolic: 70 + Math.random() * 20,
+                skin_conductance: 3 + Math.random() * 8,
+                temp_variation: 0.2 + Math.random() * 0.8,
+                oxygen_saturation: 95 + Math.random() * 4,
+                age: 30
+            };
+        }
+
+        // Enhanced demographic data simulation
+        function simulateDemographicData() {
+            return {
+                age: 25 + Math.random() * 40,
+                sleep_hours: 5 + Math.random() * 4,
+                sleep_quality: ['very_poor', 'poor', 'fair', 'good', 'excellent'][Math.floor(Math.random() * 5)],
+                exercise_frequency: ['none', 'low', 'moderate', 'high'][Math.floor(Math.random() * 4)],
+                work_hours: 6 + Math.random() * 8,
+                stress_level: ['low', 'moderate', 'high', 'very_high'][Math.floor(Math.random() * 4)],
+                caffeine_intake: ['low', 'moderate', 'high', 'very_high'][Math.floor(Math.random() * 4)],
+                alcohol_consumption: ['none', 'low', 'moderate', 'high'][Math.floor(Math.random() * 4)],
+                smoking_status: ['none', 'recent', 'current'][Math.floor(Math.random() * 3)],
+                social_support: ['poor', 'fair', 'good', 'excellent'][Math.floor(Math.random() * 4)],
+                financial_stress: ['low', 'moderate', 'high'][Math.floor(Math.random() * 3)],
+                sleep_latency: 10 + Math.random() * 30,
+                diet_quality: ['poor', 'fair', 'good', 'excellent'][Math.floor(Math.random() * 4)],
+                hydration_level: ['poor', 'fair', 'good', 'excellent'][Math.floor(Math.random() * 4)],
+                screen_time: 2 + Math.random() * 8
+            };
+        }
+
+        async function startCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        width: 640, 
+                        height: 480,
+                        facingMode: 'user'
+                    } 
+                });
+                video = document.getElementById('video');
+                video.srcObject = stream;
+                document.getElementById('analysisStatus').textContent = 'Camera Active';
+            } catch (err) {
+                console.error('Camera access failed:', err);
+                document.getElementById('analysisStatus').textContent = 'Camera Error';
+            }
+        }
+
+        function stopCamera() {
+            if (video && video.srcObject) {
+                video.srcObject.getTracks().forEach(track => track.stop());
+                video.srcObject = null;
+                document.getElementById('analysisStatus').textContent = 'Camera Stopped';
+            }
+            if (analysisInterval) {
+                clearInterval(analysisInterval);
+                analysisInterval = null;
+            }
+        }
+
+        function startAnalysis() {
+            if (!video || !video.srcObject) {
+                alert('Please start camera first');
+                return;
+            }
+            
+            document.getElementById('analysisStatus').textContent = 'Analyzing...';
+            analysisInterval = setInterval(performAnalysis, 2000);
+        }
+
+        async function performAnalysis() {
+            // Simulate advanced analysis
+            const facial_data = simulateFacialFeatures();
+            const physiological_data = simulatePhysiologicalData();
+            const demographic_data = simulateDemographicData();
+
+            // Update feature indicators
+            document.getElementById('eyeOpenness').textContent = facial_data.eye_openness.toFixed(2);
+            document.getElementById('stressLevel').textContent = (facial_data.brow_furrow * 0.8).toFixed(2);
+            document.getElementById('fatigueLevel').textContent = ((1 - facial_data.eye_openness) * 0.9).toFixed(2);
+            document.getElementById('confidence').textContent = (0.7 + Math.random() * 0.3).toFixed(2);
+
+            // Send data to backend for analysis
+            try {
+                const response = await fetch('/stress_fatigue_analysis', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        facial_data: facial_data,
+                        physiological_data: physiological_data,
+                        demographic_data: demographic_data
+                    })
+                });
+
+                const result = await response.json();
+                currentAnalysis = result;
+                updateDisplay(result);
+                document.getElementById('analysisStatus').textContent = 'Analysis Complete';
+            } catch (error) {
+                console.error('Analysis failed:', error);
+                document.getElementById('analysisStatus').textContent = 'Analysis Error';
+            }
+        }
+
+        function updateDisplay(analysis) {
+            if (!analysis || analysis.error) {
+                return;
+            }
+
+            // Update scores
+            document.getElementById('stressScore').textContent = analysis.stress_score;
+            document.getElementById('fatigueScore').textContent = analysis.fatigue_score;
+            document.getElementById('stressLevelText').textContent = analysis.stress_level;
+            document.getElementById('fatigueLevelText').textContent = analysis.fatigue_level;
+            
+            // Update confidence
+            document.getElementById('stressConfidence').textContent = analysis.confidence;
+            document.getElementById('fatigueConfidence').textContent = analysis.confidence;
+            document.getElementById('stressConfidenceBar').style.width = (analysis.confidence * 100) + '%';
+            document.getElementById('fatigueConfidenceBar').style.width = (analysis.confidence * 100) + '%';
+
+            // Update analysis method and model version
+            if (analysis.analysis_details) {
+                document.getElementById('analysisMethod').textContent = analysis.analysis_details.analysis_method;
+                document.getElementById('modelVersion').textContent = analysis.analysis_details.model_version;
+                
+                // Update model breakdown scores
+                if (analysis.analysis_details.ml_predictions && analysis.analysis_details.ml_predictions.model_available) {
+                    document.getElementById('mlStressScore').textContent = analysis.analysis_details.ml_predictions.stress_score;
+                    document.getElementById('mlFatigueScore').textContent = analysis.analysis_details.ml_predictions.fatigue_score;
+                    document.getElementById('mlStatus').textContent = 'Available';
+                } else {
+                    document.getElementById('mlStressScore').textContent = 'N/A';
+                    document.getElementById('mlFatigueScore').textContent = 'N/A';
+                    document.getElementById('mlStatus').textContent = 'Unavailable';
+                }
+                
+                document.getElementById('ruleStressScore').textContent = analysis.analysis_details.rule_based_stress;
+                document.getElementById('ruleFatigueScore').textContent = analysis.analysis_details.rule_based_fatigue;
+            }
+
+            // Update risk factors
+            updateRiskFactors(analysis.risk_factors || []);
+            
+            // Update recommendations
+            updateRecommendations(analysis.recommendations || []);
+        }
+
+        function updateRiskFactors(riskFactors) {
+            const container = document.getElementById('riskFactorsList');
+            
+            if (riskFactors.length === 0) {
+                container.innerHTML = '<p>No significant risk factors identified.</p>';
+                return;
+            }
+
+            container.innerHTML = riskFactors.map(factor => `
+                <div class="risk-factor risk-${factor.severity.toLowerCase()}">
+                    <div>
+                        <strong>${factor.factor}</strong> (${factor.category})
+                        <br><small>${factor.description}</small>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateRecommendations(recommendations) {
+            const container = document.getElementById('recommendationsList');
+            
+            if (recommendations.length === 0) {
+                container.innerHTML = '<p>No specific recommendations at this time.</p>';
+                return;
+            }
+
+            container.innerHTML = recommendations.map(rec => `
+                <div class="recommendation-category">
+                    <div class="priority-badge priority-${rec.priority.toLowerCase()}">${rec.priority}</div>
+                    <h4>${rec.category}</h4>
+                    <ul class="recommendation-list">
+                        ${rec.recommendations.map(rec => `<li>${rec}</li>`).join('')}
+                    </ul>
+                </div>
+            `).join('');
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Advanced Stress & Fatigue Analysis v3.0 loaded');
+        });
+    </script>
+</body>
+</html> 

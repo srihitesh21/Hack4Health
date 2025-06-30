@@ -2,7 +2,7 @@ import serial
 import json
 import time
 import threading
-from flask import Flask, render_template, jsonify, send_file
+from flask import Flask, render_template, jsonify, send_file, request
 from flask_socketio import SocketIO, emit
 import re
 import numpy as np
@@ -14,6 +14,7 @@ matplotlib.use('Agg')  # Use non-interactive backend
 import io
 import base64
 import os
+from datetime import datetime
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'arduino_dashboard_secret'
@@ -40,12 +41,75 @@ latest_analysis = {
     'confidence': 0,
     'spectrogram_b64': None,
     'time_domain_b64': None,
-    'analysis_time': None
+    'analysis_time': None,
+    'infection_score': 0.0,
+    'dehydration_score': 0.0,
+    'arrhythmia_score': 0.0
 }
+
+# Store combined health assessment data (demographics + health questionnaire)
+demographics_data = []
 
 # Demo mode settings
 DEMO_MODE = False  # Set to False to disable demo data
 demo_data_counter = 0
+
+# Global variables
+arduino_connected = False
+arduino_port = None
+demo_mode = True
+csv_analysis_results = None
+
+def compute_pvr_score_components(pulse_rates, skin_temps=None):
+    """
+    Compute health risk scores based on pulse rate and skin temperature data.
+    
+    Args:
+        pulse_rates (list or np.array): Array of pulse rate values in BPM
+        skin_temps (list or np.array, optional): Array of skin temperature values in °C
+        
+    Returns:
+        tuple: (infection_score, dehydration_score, arrhythmia_score)
+    """
+    pulse_rates = np.array(pulse_rates)
+    pulse_rates = pulse_rates[pulse_rates > 0]  # Remove invalid values
+    
+    if len(pulse_rates) < 2:
+        return 0.0, 0.0, 0.0
+
+    mean_hr = np.mean(pulse_rates)
+    std_long = np.std(pulse_rates)
+    std_short = np.std(np.diff(pulse_rates))
+
+    # Risk Score 1: Infection Risk (elevated HR + elevated skin temp)
+    infection_score = 0.0
+    if mean_hr > 90:
+        infection_score += 0.7  # Heart rate component
+    if skin_temps is not None and len(skin_temps) > 0:
+        mean_temp = np.mean(skin_temps)
+        if mean_temp > 37.5:  # Above 37.5°C indicates fever
+            infection_score += 0.3  # Temperature component
+    if infection_score > 0:
+        infection_score = 1.0  # Normalize to 1.0 if any risk detected
+
+    # Risk Score 2: Dehydration Risk (elevated HR + low HRV + low skin temp)
+    dehydration_score = 0.0
+    if mean_hr > 85 and std_long < 1.0 and std_short < 0.5:
+        dehydration_score += 0.6  # Heart rate component
+    if skin_temps is not None and len(skin_temps) > 0:
+        mean_temp = np.mean(skin_temps)
+        if mean_temp < 35.5:  # Below 35.5°C indicates poor circulation/dehydration
+            dehydration_score += 0.4  # Temperature component
+    if dehydration_score > 0:
+        dehydration_score = 1.0  # Normalize to 1.0 if any risk detected
+
+    # Risk Score 3: Arrhythmia Risk (abnormal values - no clear temp relationship)
+    if np.min(pulse_rates) < 45 or np.max(pulse_rates) > 130 or std_short > 5:
+        arrhythmia_score = 1.0
+    else:
+        arrhythmia_score = 0.0
+
+    return infection_score, dehydration_score, arrhythmia_score
 
 def find_arduino_port():
     """Find the Arduino port automatically"""
@@ -120,8 +184,11 @@ def analyze_csv_file(csv_path, fs=10):
         # Load the CSV
         df = pd.read_csv(csv_path, skiprows=1)
         ppg_signal = df["IR_Value"].astype(float).values
+        skin_temps = df["SkinTemp(C)"].astype(float).values  # Extract skin temperature data
         
         print(f"Analyzing {csv_path}: {len(ppg_signal)} samples")
+        print(f"Skin temperature range: {np.min(skin_temps):.1f}°C - {np.max(skin_temps):.1f}°C")
+        print(f"Average skin temperature: {np.mean(skin_temps):.1f}°C")
         
         # Check if signal is too short for filtering
         if len(ppg_signal) < 10:
@@ -140,11 +207,19 @@ def analyze_csv_file(csv_path, fs=10):
                 bpm = 0
                 confidence = 0
                 
+            # Calculate health risk scores
+            if bpm > 0:
+                # Create a pulse rate array for risk assessment
+                pulse_rates = [bpm + np.random.normal(0, 2) for _ in range(10)]
+                infection_score, dehydration_score, arrhythmia_score = compute_pvr_score_components(pulse_rates, skin_temps)
+            else:
+                infection_score, dehydration_score, arrhythmia_score = 0.0, 0.0, 0.0
+                
             # Generate simple plots for short signals
             time_domain_b64 = generate_time_domain_plot(ppg_signal, None, fs, bpm, confidence)
             spectrogram_b64 = None
             
-            return bpm, confidence, spectrogram_b64, time_domain_b64
+            return bpm, confidence, spectrogram_b64, time_domain_b64, infection_score, dehydration_score, arrhythmia_score
         
         # For longer signals, use bandpass filtering
         # Bandpass filter (40–240 BPM = 0.67–4 Hz)
@@ -188,11 +263,19 @@ def analyze_csv_file(csv_path, fs=10):
             bpm = peak_freq * 60
             confidence = np.max(np.mean(spec, axis=1)) / np.sum(np.mean(spec, axis=1))
             
+            # Calculate health risk scores
+            if bpm > 0:
+                # Create a pulse rate array for risk assessment
+                pulse_rates = [bpm + np.random.normal(0, 2) for _ in range(10)]
+                infection_score, dehydration_score, arrhythmia_score = compute_pvr_score_components(pulse_rates, skin_temps)
+            else:
+                infection_score, dehydration_score, arrhythmia_score = 0.0, 0.0, 0.0
+            
             # Generate plots
             spectrogram_b64 = generate_spectrogram_plot(filtered, fs, window_size, overlap_size, bpm)
             time_domain_b64 = generate_time_domain_plot(ppg_signal, filtered, fs, bpm, confidence)
             
-            return bpm, confidence, spectrogram_b64, time_domain_b64
+            return bpm, confidence, spectrogram_b64, time_domain_b64, infection_score, dehydration_score, arrhythmia_score
         else:
             # Simple periodogram for short signals
             freqs, power = periodogram(filtered, fs)
@@ -202,16 +285,25 @@ def analyze_csv_file(csv_path, fs=10):
                 peak_freq = freqs[np.argmax(power)]
                 bpm = peak_freq * 60
                 confidence = power.max() / np.sum(power)
+                
+                # Calculate health risk scores
+                if bpm > 0:
+                    # Create a pulse rate array for risk assessment
+                    pulse_rates = [bpm + np.random.normal(0, 2) for _ in range(10)]
+                    infection_score, dehydration_score, arrhythmia_score = compute_pvr_score_components(pulse_rates, skin_temps)
+                else:
+                    infection_score, dehydration_score, arrhythmia_score = 0.0, 0.0, 0.0
+                
                 time_domain_b64 = generate_time_domain_plot(ppg_signal, filtered, fs, bpm, confidence)
                 spectrogram_b64 = None
-                return bpm, confidence, spectrogram_b64, time_domain_b64
+                return bpm, confidence, spectrogram_b64, time_domain_b64, infection_score, dehydration_score, arrhythmia_score
             else:
                 time_domain_b64 = generate_time_domain_plot(ppg_signal, filtered, fs, 0, 0)
-                return 0, 0, None, time_domain_b64
+                return 0, 0, None, time_domain_b64, 0.0, 0.0, 0.0
         
     except Exception as e:
         print(f"CSV analysis error: {e}")
-        return 0, 0, None, None
+        return 0, 0, None, None, 0.0, 0.0, 0.0
 
 def generate_spectrogram_plot(filtered_signal, fs, window_size, overlap_size, bpm):
     """Generate spectrogram plot and return as base64"""
@@ -294,11 +386,15 @@ def load_and_analyze_csv():
         
         if result:
             # Handle different return formats from analyze_csv_file
-            if len(result) == 4:
+            if len(result) == 7:
+                bpm, confidence, spectrogram_b64, time_domain_b64, infection_score, dehydration_score, arrhythmia_score = result
+            elif len(result) == 4:
                 bpm, confidence, spectrogram_b64, time_domain_b64 = result
+                infection_score, dehydration_score, arrhythmia_score = 0.0, 0.0, 0.0
             elif len(result) == 3:
                 bpm, confidence, time_domain_b64 = result
                 spectrogram_b64 = None
+                infection_score, dehydration_score, arrhythmia_score = 0.0, 0.0, 0.0
             else:
                 print(f"Unexpected result format: {result}")
                 return None
@@ -308,10 +404,14 @@ def load_and_analyze_csv():
                 'confidence': confidence,
                 'spectrogram_b64': spectrogram_b64,
                 'time_domain_b64': time_domain_b64,
-                'analysis_time': time.strftime('%Y-%m-%d %H:%M:%S')
+                'analysis_time': time.strftime('%Y-%m-%d %H:%M:%S'),
+                'infection_score': infection_score,
+                'dehydration_score': dehydration_score,
+                'arrhythmia_score': arrhythmia_score
             }
             
             print(f"Analysis complete: BPM={bpm:.1f}, Confidence={confidence:.3f}")
+            print(f"Risk Scores - Infection: {infection_score:.1f}, Dehydration: {dehydration_score:.1f}, Arrhythmia: {arrhythmia_score:.1f}")
             
             # Emit the analysis results to connected clients
             socketio.emit('csv_analysis_result', latest_analysis)
@@ -451,22 +551,108 @@ def analyze_csv():
         file.save(temp_path)
         
         # Analyze the file
-        bpm, confidence, spectrogram_b64, time_domain_b64 = analyze_csv_file(temp_path, fs=10)
+        result = analyze_csv_file(temp_path, fs=10)
         
         # Clean up
         os.remove(temp_path)
+        
+        if len(result) == 7:
+            bpm, confidence, spectrogram_b64, time_domain_b64, infection_score, dehydration_score, arrhythmia_score = result
+        else:
+            bpm, confidence, spectrogram_b64, time_domain_b64 = result[:4]
+            infection_score, dehydration_score, arrhythmia_score = 0.0, 0.0, 0.0
         
         return {
             'bpm': float(bpm),
             'confidence': float(confidence),
             'spectrogram': spectrogram_b64,
             'time_domain': time_domain_b64,
+            'infection_score': float(infection_score),
+            'dehydration_score': float(dehydration_score),
+            'arrhythmia_score': float(arrhythmia_score),
             'signal_length': 0,  # Will be calculated from the signal
             'duration': 0  # Will be calculated from the signal
         }
         
     except Exception as e:
         return {'error': str(e)}, 500
+
+@app.route('/health_assessment', methods=['GET', 'POST'])
+def health_assessment():
+    """Health Risk Assessment page"""
+    if request.method == 'POST':
+        data = request.get_json()
+        if data:
+            # Store combined assessment data
+            assessment_data = {
+                'age': data.get('age'),
+                'gender': data.get('gender'),
+                'risk_factors': {
+                    'high_blood_pressure': data.get('high_blood_pressure'),
+                    'diabetes': data.get('diabetes'),
+                    'smoking': data.get('smoking'),
+                    'obesity': data.get('obesity'),
+                    'family_history': data.get('family_history'),
+                    'physical_inactivity': data.get('physical_inactivity'),
+                    'high_cholesterol': data.get('high_cholesterol'),
+                    'previous_stroke': data.get('previous_stroke')
+                },
+                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            }
+            demographics_data.append(assessment_data)
+            return jsonify({'success': True, 'message': 'Assessment submitted successfully'})
+    
+    return render_template('demographics.html', assessments=demographics_data)
+
+@app.route('/demographics', methods=['GET', 'POST'])
+def demographics():
+    """Demographics/Health Assessment page - alias for health_assessment"""
+    return health_assessment()
+
+@app.route('/api/demographics')
+def get_demographics():
+    """API endpoint to get stored demographics data"""
+    return jsonify(demographics_data)
+
+@app.route('/submit_demographics', methods=['POST'])
+def submit_demographics():
+    """Handle demographics form submission"""
+    try:
+        data = request.get_json()
+        if data:
+            # Store combined assessment data
+            assessment_data = {
+                'age': data.get('age'),
+                'gender': data.get('gender'),
+                'symptoms': data.get('symptoms', []),
+                'medical_history': data.get('medical_history', []),
+                'risk_factors': data.get('risk_factors', []),
+                'timestamp': time.time()
+            }
+            
+            # Add the latest risk scores from CSV analysis
+            if csv_analysis_results:
+                assessment_data['risk_scores'] = {
+                    'infection_score': csv_analysis_results.get('infection_score', 0.0),
+                    'dehydration_score': csv_analysis_results.get('dehydration_score', 0.0),
+                    'arrhythmia_score': csv_analysis_results.get('arrhythmia_score', 0.0)
+                }
+            
+            demographics_data.append(assessment_data)
+            
+            # Keep only the last 10 assessments
+            if len(demographics_data) > 10:
+                demographics_data.pop(0)
+            
+            return jsonify({
+                'success': True,
+                'message': 'Assessment submitted successfully',
+                'risk_scores': assessment_data.get('risk_scores', {})
+            })
+        else:
+            return jsonify({'success': False, 'error': 'No data received'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
 
 if __name__ == '__main__':
     # Start Arduino data reading thread

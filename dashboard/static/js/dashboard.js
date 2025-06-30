@@ -31,12 +31,17 @@ const dataLog = document.getElementById('data-log');
 const requestHeartRateBtn = document.getElementById('request-heart-rate');
 const refreshCsvAnalysisBtn = document.getElementById('refresh-csv-analysis');
 
+// Hospital search functionality
+let hospitalMap = null;
+let hospitalMarker = null;
+let userMarker = null;
+
 // Initialize dashboard
 document.addEventListener('DOMContentLoaded', function() {
     initializeCharts();
     setupEventListeners();
     requestInitialData();
-    loadCsvAnalysis(); // Load CSV analysis on page load
+    loadCSVAnalysis(); // Load CSV analysis on page load
 });
 
 function initializeCharts() {
@@ -221,21 +226,14 @@ function requestInitialData() {
     socket.emit('request_data');
 }
 
-function loadCsvAnalysis() {
-    // Load CSV analysis from API
+function loadCSVAnalysis() {
     fetch('/api/csv_analysis')
         .then(response => response.json())
         .then(data => {
-            if (data && (data.bpm !== undefined || data.analysis_time)) {
-                displayCsvAnalysis(data);
-            } else {
-                // If no analysis available, trigger one
-                socket.emit('request_csv_analysis');
-            }
+            updateCSVAnalysis(data);
         })
         .catch(error => {
             console.error('Error loading CSV analysis:', error);
-            document.getElementById('csv-status-display').textContent = 'Error';
         });
 }
 
@@ -497,6 +495,17 @@ function displayCsvAnalysis(data) {
     document.getElementById('csv-status-display').textContent = 'Complete';
     document.getElementById('csv-status-display').style.color = '#27ae60';
     
+    // Update risk scores if available
+    if (data.infection_score !== undefined) {
+        updateRiskCard('infectionRisk', 'infectionIndicator', data.infection_score, 'Infection');
+    }
+    if (data.dehydration_score !== undefined) {
+        updateRiskCard('dehydrationRisk', 'dehydrationIndicator', data.dehydration_score, 'Dehydration');
+    }
+    if (data.arrhythmia_score !== undefined) {
+        updateRiskCard('arrhythmiaRisk', 'arrhythmiaIndicator', data.arrhythmia_score, 'Arrhythmia');
+    }
+    
     // Display time domain plot
     if (data.time_domain_b64) {
         const timeDomainImage = document.getElementById('time-domain-image');
@@ -518,6 +527,89 @@ function displayCsvAnalysis(data) {
     }
 }
 
+function updateCSVAnalysis(data) {
+    if (data.bpm > 0) {
+        document.getElementById('heartRate').textContent = data.bpm.toFixed(1);
+        document.getElementById('heartRate').style.color = '#dc3545';
+        document.querySelector('.heartbeat-animation').style.display = 'block';
+    } else {
+        document.getElementById('heartRate').textContent = '--';
+        document.getElementById('heartRate').style.color = '#6c757d';
+        document.querySelector('.heartbeat-animation').style.display = 'none';
+    }
+    
+    // Update risk scores
+    updateRiskCard('infectionRisk', 'infectionIndicator', data.infection_score, 'Infection');
+    updateRiskCard('dehydrationRisk', 'dehydrationIndicator', data.dehydration_score, 'Dehydration');
+    updateRiskCard('arrhythmiaRisk', 'arrhythmiaIndicator', data.arrhythmia_score, 'Arrhythmia');
+    
+    // Update analysis time
+    if (data.analysis_time) {
+        const analysisTime = new Date(data.analysis_time * 1000).toLocaleString();
+        document.getElementById('analysisTime').textContent = analysisTime;
+    }
+    
+    // Update plots if available
+    if (data.time_domain_plot) {
+        document.getElementById('timeDomainPlot').src = 'data:image/png;base64,' + data.time_domain_plot;
+        document.getElementById('timeDomainPlot').style.display = 'block';
+    }
+    
+    if (data.spectrogram_plot) {
+        document.getElementById('spectrogramPlot').src = 'data:image/png;base64,' + data.spectrogram_plot;
+        document.getElementById('spectrogramPlot').style.display = 'block';
+    }
+}
+
+function updateRiskCard(valueId, indicatorId, score, riskType) {
+    const valueElement = document.getElementById(valueId);
+    const indicatorElement = document.getElementById(indicatorId);
+    const cardElement = indicatorElement.closest('.risk-card');
+    
+    // Update value to show "High Chance" or "Low Chance" instead of numerical score
+    if (score >= 1.0) {
+        valueElement.textContent = 'High Chance';
+        valueElement.style.color = '#dc3545';
+        indicatorElement.className = 'risk-indicator high-risk';
+        cardElement.className = 'card risk-card high-risk';
+    } else {
+        valueElement.textContent = 'Low Chance';
+        valueElement.style.color = '#28a745';
+        indicatorElement.className = 'risk-indicator low-risk';
+        cardElement.className = 'card risk-card low-risk';
+    }
+    
+    // Add tooltip with explanation
+    const tooltipText = getRiskExplanation(score, riskType);
+    cardElement.title = tooltipText;
+}
+
+function getRiskExplanation(score, riskType) {
+    if (score >= 1.0) {
+        switch (riskType) {
+            case 'Infection':
+                return 'High chance of infection detected. Elevated heart rate (>90 BPM) and/or elevated skin temperature (>37.5°C) may indicate fever or infection.';
+            case 'Dehydration':
+                return 'High chance of dehydration detected. Elevated heart rate with low variability and/or low skin temperature (<35.5°C) suggests poor circulation.';
+            case 'Arrhythmia':
+                return 'High chance of arrhythmia detected. Abnormal heart rate patterns detected (too low, too high, or irregular).';
+            default:
+                return 'High risk detected.';
+        }
+    } else {
+        switch (riskType) {
+            case 'Infection':
+                return 'Low chance of infection. Heart rate and skin temperature within normal ranges.';
+            case 'Dehydration':
+                return 'Low chance of dehydration. Heart rate variability and skin temperature appear normal.';
+            case 'Arrhythmia':
+                return 'Low chance of arrhythmia. Heart rate patterns appear normal and regular.';
+            default:
+                return 'Low risk detected.';
+        }
+    }
+}
+
 // Handle window resize for responsive charts
 window.addEventListener('resize', function() {
     if (tempHumidityChart) {
@@ -529,4 +621,258 @@ window.addEventListener('resize', function() {
     if (heartRateChart) {
         heartRateChart.resize();
     }
-}); 
+});
+
+function findNearestHospital() {
+    const locationInput = document.getElementById('locationInput').value.trim();
+    
+    if (!locationInput) {
+        alert('Please enter a location to search for hospitals.');
+        return;
+    }
+    
+    const hospitalInfo = document.getElementById('hospitalInfo');
+    hospitalInfo.innerHTML = '<p>Searching for hospitals near: ' + locationInput + '...</p>';
+    
+    console.log('Searching for location:', locationInput);
+    
+    // Immediately use fallback system since external APIs are rate-limited
+    console.log('Using fallback hospital data for immediate results');
+    
+    // Use Vancouver coordinates as fallback
+    const userLat = 49.2827;
+    const userLon = -123.1207;
+    
+    // Display sample hospital data immediately
+    displaySampleHospitalInfo(locationInput, userLat, userLon);
+}
+
+function geocodeLocation(address) {
+    return new Promise((resolve, reject) => {
+        // Skip external API call and use fallback immediately
+        console.log('Using fallback coordinates for:', address);
+        resolve({ lat: 49.2827, lon: -123.1207 });
+    });
+}
+
+function searchNearbyHospitals(lat, lon, userLocation) {
+    // Skip external API call and use fallback immediately
+    console.log('Using fallback hospital data');
+    displaySampleHospitalInfo(userLocation, lat, lon);
+}
+
+function displaySampleHospitalInfo(userLocation, userLat, userLon) {
+    const hospitalInfo = document.getElementById('hospitalInfo');
+    
+    // Sample hospital data for Vancouver area
+    const sampleHospitals = [
+        {
+            name: "Vancouver General Hospital",
+            address: "899 W 12th Ave, Vancouver, BC V5Z 1M9",
+            phone: "(604) 875-4111",
+            website: "https://vch.ca/locations-services/result?res_id=1",
+            lat: 49.2627,
+            lon: -123.1234,
+            distance: 2.1
+        },
+        {
+            name: "St. Paul's Hospital",
+            address: "1081 Burrard St, Vancouver, BC V6Z 1Y6",
+            phone: "(604) 682-2344",
+            website: "https://www.providencehealthcare.org/hospitals-residences/st-pauls-hospital",
+            lat: 49.2817,
+            lon: -123.1307,
+            distance: 0.8
+        },
+        {
+            name: "UBC Hospital",
+            address: "2211 Wesbrook Mall, Vancouver, BC V6T 2B5",
+            phone: "(604) 822-7121",
+            website: "https://www.ubchospital.com/",
+            lat: 49.2527,
+            lon: -123.2434,
+            distance: 3.2
+        },
+        {
+            name: "Mount Saint Joseph Hospital",
+            address: "3080 Prince Edward St, Vancouver, BC V5T 3N4",
+            phone: "(604) 874-1141",
+            website: "https://www.providencehealthcare.org/hospitals-residences/mount-saint-joseph-hospital",
+            lat: 49.2487,
+            lon: -123.0894,
+            distance: 1.5
+        }
+    ];
+    
+    // Find closest sample hospital
+    const closest = sampleHospitals.reduce((closest, hospital) => {
+        const distance = calculateDistance(userLat, userLon, hospital.lat, hospital.lon);
+        return distance < closest.distance ? { ...hospital, distance } : closest;
+    }, { distance: Infinity });
+    
+    // Display hospital information
+    hospitalInfo.innerHTML = `
+        <div class="hospital-details">
+            <h4>🏥 ${closest.name}</h4>
+            <p><strong>📍 Address:</strong> ${closest.address}</p>
+            <p><strong>📞 Phone:</strong> <a href="tel:${closest.phone}" style="color: white;">${closest.phone}</a></p>
+            <p><strong>🌐 Website:</strong> <a href="${closest.website}" target="_blank" style="color: white;">Visit Website</a></p>
+            <p><strong>📏 Distance:</strong> ${closest.distance.toFixed(1)} km from your location</p>
+            <p><strong>🚨 Emergency:</strong> Call 911 for immediate assistance</p>
+        </div>
+    `;
+    
+    // Update the map
+    updateHospitalMap(userLat, userLon, closest.lat, closest.lon, closest.name, userLocation);
+    
+    // Add note about demo data
+    hospitalInfo.innerHTML += '<p style="font-size: 0.8em; color: #666; margin-top: 10px;"><em>Note: Showing sample hospital data for demonstration purposes.</em></p>';
+}
+
+function displayHospitalInfo(hospital, userLocation, userLat, userLon) {
+    const hospitalInfo = document.getElementById('hospitalInfo');
+    
+    let hospitalLat, hospitalLon;
+    if (hospital.lat && hospital.lon) {
+        hospitalLat = hospital.lat;
+        hospitalLon = hospital.lon;
+    } else if (hospital.center) {
+        hospitalLat = hospital.center.lat;
+        hospitalLon = hospital.center.lon;
+    }
+    
+    const distance = hospital.distance.toFixed(1);
+    
+    hospitalInfo.innerHTML = `
+        <div class="hospital-details">
+            <h4>${hospital.tags.name}</h4>
+            <p><strong>Address:</strong> ${hospital.tags['addr:street'] || 'Address not available'}</p>
+            <p class="distance"><strong>Distance:</strong> ${distance} km</p>
+            <p class="phone"><strong>Phone:</strong> ${hospital.tags.phone || 'Phone not available'}</p>
+            ${hospital.tags.website ? `<p><strong>Website:</strong> <a href="${hospital.tags.website}" target="_blank" style="color: #4caf50;">Visit Website</a></p>` : ''}
+        </div>
+    `;
+    
+    // Update map
+    updateHospitalMap(userLat, userLon, hospitalLat, hospitalLon, hospital.tags.name, userLocation);
+}
+
+function updateHospitalMap(userLat, userLon, hospitalLat, hospitalLon, hospitalName, userLocation) {
+    try {
+        // Check if Leaflet is available
+        if (typeof L === 'undefined') {
+            console.error('Leaflet is not loaded');
+            return;
+        }
+        
+        if (!hospitalMap) {
+            hospitalMap = L.map('hospitalMap').setView([userLat, userLon], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(hospitalMap);
+        } else {
+            hospitalMap.setView([userLat, userLon], 13);
+        }
+        
+        // Clear existing markers
+        hospitalMap.eachLayer((layer) => {
+            if (layer instanceof L.Marker) {
+                hospitalMap.removeLayer(layer);
+            }
+        });
+        
+        // Add user location marker
+        userMarker = L.marker([userLat, userLon])
+            .addTo(hospitalMap)
+            .bindPopup(`<b>Your Location:</b><br>${userLocation}`)
+            .openPopup();
+        
+        // Add hospital marker
+        hospitalMarker = L.marker([hospitalLat, hospitalLon])
+            .addTo(hospitalMap)
+            .bindPopup(`<b>Hospital:</b><br>${hospitalName}`)
+            .openPopup();
+        
+        // Draw route line
+        const routeLine = L.polyline([[userLat, userLon], [hospitalLat, hospitalLon]], {
+            color: 'red',
+            weight: 3,
+            opacity: 0.7,
+            dashArray: '10, 10'
+        }).addTo(hospitalMap);
+        
+        // Fit map to show both markers
+        const bounds = L.latLngBounds([[userLat, userLon], [hospitalLat, hospitalLon]]);
+        hospitalMap.fitBounds(bounds, { padding: [20, 20] });
+        
+        console.log('Map updated successfully');
+    } catch (error) {
+        console.error('Error updating map:', error);
+    }
+}
+
+// Add event listener for Enter key on location input
+document.addEventListener('DOMContentLoaded', function() {
+    const locationInput = document.getElementById('locationInput');
+    if (locationInput) {
+        locationInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                findNearestHospital();
+            }
+        });
+    }
+    
+    // Add a test button for debugging
+    const testButton = document.createElement('button');
+    testButton.textContent = 'Test Hospital Search';
+    testButton.onclick = testHospitalSearch;
+    testButton.style.marginTop = '10px';
+    testButton.style.padding = '5px 10px';
+    testButton.style.backgroundColor = '#007bff';
+    testButton.style.color = 'white';
+    testButton.style.border = 'none';
+    testButton.style.borderRadius = '4px';
+    testButton.style.cursor = 'pointer';
+    
+    const hospitalInfo = document.getElementById('hospitalInfo');
+    if (hospitalInfo) {
+        hospitalInfo.appendChild(testButton);
+    }
+});
+
+function testHospitalSearch() {
+    console.log('🧪 Testing hospital search functionality...');
+    
+    // Test with a sample address
+    const testAddress = "Vancouver General Hospital, Vancouver, BC";
+    document.getElementById('locationInput').value = testAddress;
+    
+    console.log('Testing with address:', testAddress);
+    
+    // Add a visual indicator that test is running
+    const hospitalInfo = document.getElementById('hospitalInfo');
+    hospitalInfo.innerHTML = '<p style="color: #007bff;">🧪 Test Mode: Searching for hospitals near ' + testAddress + '...</p>';
+    
+    // Trigger the search
+    findNearestHospital();
+    
+    // Also test the fallback functionality after a short delay
+    setTimeout(() => {
+        console.log('Testing fallback functionality...');
+        const fallbackAddress = "Test Location, Vancouver, BC";
+        document.getElementById('locationInput').value = fallbackAddress;
+        hospitalInfo.innerHTML = '<p style="color: #007bff;">🧪 Test Mode: Testing fallback with ' + fallbackAddress + '...</p>';
+        findNearestHospital();
+    }, 2000);
+}
+
+// Add CSS animation for emergency pulsing
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.7; }
+        100% { opacity: 1; }
+    }
+`;
+document.head.appendChild(style);

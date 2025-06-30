@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health Risk Assessment - Arduino Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <style>
+        .demographics-container {
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 30px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .demographics-container h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.2em;
+        }
+        
+        .demographics-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .form-group label {
+            font-weight: 600;
+            color: #333;
+            font-size: 16px;
+        }
+        
+        .form-group input, .form-group select {
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+        
+        .submit-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .submit-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .nav-links {
+            text-align: center;
+            margin-top: 30px;
+        }
+        
+        .nav-links a {
+            color: #007bff;
+            text-decoration: none;
+            margin: 0 15px;
+            font-weight: 500;
+        }
+        
+        .nav-links a:hover {
+            text-decoration: underline;
+        }
+        
+        .data-list {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .data-list h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        
+        .data-item {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+        
+        .health-questionnaire {
+            margin-top: 40px;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .health-questionnaire h2 {
+            color: #333;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .health-questionnaire p {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .question-group {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 10px;
+            border-left: 4px solid #28a745;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .question-group h4 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+        
+        .question-description {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+        
+        .radio-group {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .radio-group label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .radio-group input[type="radio"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        
+        .health-form {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+        
+        .health-form .submit-btn {
+            margin-top: 20px;
+            align-self: center;
+        }
+        
+        .risk-cards {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .row {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .col {
+            flex: 1;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .risk-card {
+            padding: 10px;
+            border-left: 4px solid #007bff;
+        }
+        
+        .risk-card h5 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        .risk-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .high-risk {
+            border-left-color: #dc3545;
+        }
+        
+        .low-risk {
+            border-left-color: #28a745;
+        }
+    </style>
+</head>
+<body>
+    <div class="demographics-container">
+        <h1>Health Risk Assessment</h1>
+        <p>Please provide your basic information and complete the health questionnaire to assess your cardiovascular risk factors.</p>
+        
+        <form class="demographics-form" id="demographicsForm">
+            <div class="form-group">
+                <label for="age">Age:</label>
+                <input type="number" id="age" name="age" min="1" max="120" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="gender">Gender:</label>
+                <select id="gender" name="gender" required>
+                    <option value="">Select gender</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+        </form>
+        
+        <div id="message" class="message"></div>
+        
+        <!-- Health Questionnaire Section -->
+        <div class="health-questionnaire">
+            <h2>Cardiovascular Risk Factors</h2>
+            <p>Please answer the following questions about your health history. This information helps assess your cardiovascular risk profile.</p>
+            
+            <form class="health-form" id="healthForm">
+                <!-- Symptoms Assessment Section -->
+                <div class="form-section">
+                    <h4><i class="fas fa-exclamation-triangle text-warning"></i> Symptoms Assessment</h4>
+                    <p class="text-muted">Select all applicable symptoms:</p>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="headache" name="symptoms" value="headache">
+                                <label class="form-check-label" for="headache">Headache</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="dizziness" name="symptoms" value="dizziness">
+                                <label class="form-check-label" for="dizziness">Dizziness</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="nausea" name="symptoms" value="nausea">
+                                <label class="form-check-label" for="nausea">Nausea</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="vomiting" name="symptoms" value="vomiting">
+                                <label class="form-check-label" for="vomiting">Vomiting</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="muscle_cramps" name="symptoms" value="muscle_cramps">
+                                <label class="form-check-label" for="muscle_cramps">Muscle Cramps</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="weakness" name="symptoms" value="weakness">
+                                <label class="form-check-label" for="weakness">Weakness</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="fatigue" name="symptoms" value="fatigue">
+                                <label class="form-check-label" for="fatigue">Fatigue</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="hot_skin" name="symptoms" value="hot_skin">
+                                <label class="form-check-label" for="hot_skin">Hot Skin</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="dry_skin" name="symptoms" value="dry_skin">
+                                <label class="form-check-label" for="dry_skin">Dry Skin</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="rapid_breathing" name="symptoms" value="rapid_breathing">
+                                <label class="form-check-label" for="rapid_breathing">Rapid Breathing</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Medical History & Risk Factors Section -->
+                <div class="form-section">
+                    <h4><i class="fas fa-hospital text-info"></i> Medical History & Risk Factors</h4>
+                    <p class="text-muted">Select all applicable risk factors:</p>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="cardiovascular_disease" name="medical_history" value="cardiovascular_disease">
+                                <label class="form-check-label" for="cardiovascular_disease">Cardiovascular Disease</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="diabetes" name="medical_history" value="diabetes">
+                                <label class="form-check-label" for="diabetes">Diabetes</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="obesity" name="medical_history" value="obesity">
+                                <label class="form-check-label" for="obesity">Obesity</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="elderly" name="medical_history" value="elderly">
+                                <label class="form-check-label" for="elderly">Elderly (>65 years)</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="heat_sensitive_medications" name="medical_history" value="heat_sensitive_medications">
+                                <label class="form-check-label" for="heat_sensitive_medications">Heat-Sensitive Medications</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="dehydration" name="medical_history" value="dehydration">
+                                <label class="form-check-label" for="dehydration">Dehydration</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="alcohol_use" name="medical_history" value="alcohol_use">
+                                <label class="form-check-label" for="alcohol_use">Alcohol Use</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="previous_heat_illness" name="medical_history" value="previous_heat_illness">
+                                <label class="form-check-label" for="previous_heat_illness">Previous Heat Illness</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="poor_heat_acclimation" name="medical_history" value="poor_heat_acclimation">
+                                <label class="form-check-label" for="poor_heat_acclimation">Poor Heat Acclimation</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="prolonged_exertion" name="medical_history" value="prolonged_exertion">
+                                <label class="form-check-label" for="prolonged_exertion">Prolonged Exertion</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Original Risk Factors Section -->
+                <div class="form-section">
+                    <h4><i class="fas fa-heartbeat text-danger"></i> Stroke Risk Factors</h4>
+                    <p class="text-muted">Select all applicable risk factors:</p>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="high_blood_pressure" name="risk_factors" value="high_blood_pressure">
+                                <label class="form-check-label" for="high_blood_pressure">High Blood Pressure</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="diabetes_stroke" name="risk_factors" value="diabetes">
+                                <label class="form-check-label" for="diabetes_stroke">Diabetes</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="smoking" name="risk_factors" value="smoking">
+                                <label class="form-check-label" for="smoking">Smoking</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="obesity_stroke" name="risk_factors" value="obesity">
+                                <label class="form-check-label" for="obesity_stroke">Obesity</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="family_history" name="risk_factors" value="family_history">
+                                <label class="form-check-label" for="family_history">Family History</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="physical_inactivity" name="risk_factors" value="physical_inactivity">
+                                <label class="form-check-label" for="physical_inactivity">Physical Inactivity</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="high_cholesterol" name="risk_factors" value="high_cholesterol">
+                                <label class="form-check-label" for="high_cholesterol">High Cholesterol</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="atrial_fibrillation" name="risk_factors" value="atrial_fibrillation">
+                                <label class="form-check-label" for="atrial_fibrillation">Atrial Fibrillation</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+            
+            <button type="button" class="submit-btn" onclick="submitForm()">Submit Complete Assessment</button>
+            
+            <div id="healthMessage" class="message"></div>
+        </div>
+        
+        <div id="risk-cards" style="display:none; margin-top: 30px;">
+            <div class="row">
+                <div class="col risk-card" id="infection-risk-card">
+                    <h5>Infection Risk</h5>
+                    <div class="risk-value" id="infection-risk-value">0.0</div>
+                </div>
+                <div class="col risk-card" id="dehydration-risk-card">
+                    <h5>Dehydration Risk</h5>
+                    <div class="risk-value" id="dehydration-risk-value">0.0</div>
+                </div>
+                <div class="col risk-card" id="arrhythmia-risk-card">
+                    <h5>Arrhythmia Risk</h5>
+                    <div class="risk-value" id="arrhythmia-risk-value">0.0</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="nav-links">
+            <a href="/">Back to Dashboard</a>
+            <a href="#" onclick="loadStoredData()">View Stored Data</a>
+        </div>
+        
+        <div id="dataList" class="data-list" style="display: none;">
+            <h3>Stored Assessment Data</h3>
+            <div id="dataItems"></div>
+        </div>
+    </div>
+
+    <script>
+        function submitForm() {
+            const formData = {
+                age: document.getElementById('age').value,
+                gender: document.getElementById('gender').value,
+                
+                // Symptoms Assessment
+                symptoms: Array.from(document.querySelectorAll('input[name="symptoms"]:checked')).map(cb => cb.value),
+                
+                // Medical History & Risk Factors
+                medical_history: Array.from(document.querySelectorAll('input[name="medical_history"]:checked')).map(cb => cb.value),
+                
+                // Stroke Risk Factors
+                risk_factors: Array.from(document.querySelectorAll('input[name="risk_factors"]:checked')).map(cb => cb.value)
+            };
+
+            fetch('/submit_demographics', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showSuccessMessage('Assessment submitted successfully!');
+                    loadStoredData();
+                    
+                    // Show risk cards if available
+                    if (data.risk_scores) {
+                        displayRiskCards(data.risk_scores);
+                    }
+                } else {
+                    showErrorMessage('Error submitting assessment: ' + data.error);
+                }
+            })
+            .catch(error => {
+                showErrorMessage('Error submitting assessment: ' + error);
+            });
+        }
+
+        function displayRiskCards(riskScores) {
+            const riskCardsDiv = document.getElementById('risk-cards');
+            if (!riskCardsDiv) return;
+
+            // Update risk values with null checks
+            const infectionScore = riskScores.infection_score || 0;
+            const dehydrationScore = riskScores.dehydration_score || 0;
+            const arrhythmiaScore = riskScores.arrhythmia_score || 0;
+
+            document.getElementById('infection-risk-value').textContent = infectionScore.toFixed(1);
+            document.getElementById('dehydration-risk-value').textContent = dehydrationScore.toFixed(1);
+            document.getElementById('arrhythmia-risk-value').textContent = arrhythmiaScore.toFixed(1);
+
+            // Update card styling based on risk levels
+            updateRiskCardStyle('infection-risk-card', infectionScore);
+            updateRiskCardStyle('dehydration-risk-card', dehydrationScore);
+            updateRiskCardStyle('arrhythmia-risk-card', arrhythmiaScore);
+
+            riskCardsDiv.style.display = 'block';
+        }
+
+        function updateRiskCardStyle(cardId, score) {
+            const card = document.getElementById(cardId);
+            if (!card) return;
+
+            card.classList.remove('high-risk', 'low-risk');
+            if (score > 0.5) {
+                card.classList.add('high-risk');
+            } else if (score > 0) {
+                card.classList.add('low-risk');
+            }
+        }
+
+        function loadStoredData() {
+            fetch('/api/demographics')
+            .then(response => response.json())
+            .then(data => {
+                const container = document.getElementById('dataItems');
+                container.innerHTML = '';
+
+                data.forEach((assessment, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'data-item';
+                    
+                    const symptomsList = assessment.symptoms && assessment.symptoms.length > 0 
+                        ? assessment.symptoms.join(', ') : 'None';
+                    const medicalHistoryList = assessment.medical_history && assessment.medical_history.length > 0 
+                        ? assessment.medical_history.join(', ') : 'None';
+                    const riskFactorsList = assessment.risk_factors && assessment.risk_factors.length > 0 
+                        ? assessment.risk_factors.join(', ') : 'None';
+                    
+                    // Add null checks for risk scores
+                    let riskScoresHtml = '';
+                    if (assessment.risk_scores) {
+                        const infectionScore = assessment.risk_scores.infection_score || 0;
+                        const dehydrationScore = assessment.risk_scores.dehydration_score || 0;
+                        const arrhythmiaScore = assessment.risk_scores.arrhythmia_score || 0;
+                        
+                        riskScoresHtml = `
+                        <div style='margin-top:10px;'>
+                            <span style='font-weight:bold;'>Infection Risk:</span> ${infectionScore.toFixed(1)} &nbsp; 
+                            <span style='font-weight:bold;'>Dehydration Risk:</span> ${dehydrationScore.toFixed(1)} &nbsp; 
+                            <span style='font-weight:bold;'>Arrhythmia Risk:</span> ${arrhythmiaScore.toFixed(1)}
+                        </div>`;
+                    }
+                    
+                    card.innerHTML = `
+                        <strong>Age:</strong> ${assessment.age} | 
+                        <strong>Gender:</strong> ${assessment.gender} | 
+                        <strong>Date:</strong> ${new Date(assessment.timestamp * 1000).toLocaleString()}
+                        <br><strong>Symptoms:</strong> ${symptomsList}
+                        <br><strong>Medical History:</strong> ${medicalHistoryList}
+                        <br><strong>Risk Factors:</strong> ${riskFactorsList}
+                        ${riskScoresHtml}
+                    `;
+                    container.appendChild(card);
+                });
+                
+                // Show the data list
+                document.getElementById('dataList').style.display = 'block';
+            })
+            .catch(error => {
+                console.error('Error loading stored data:', error);
+                const container = document.getElementById('dataItems');
+                container.innerHTML = '<p>Error loading data.</p>';
+            });
+        }
+        
+        // Load existing data on page load
+        loadStoredData();
+        
+        // Add validation for age input
+        document.getElementById('age').addEventListener('input', function() {
+            const age = parseInt(this.value);
+            if (age < 1 || age > 120) {
+                this.setCustomValidity('Age must be between 1 and 120');
+            } else {
+                this.setCustomValidity('');
+            }
+        });
+
+        function showSuccessMessage(message) {
+            const messageDiv = document.getElementById('healthMessage');
+            messageDiv.textContent = message;
+            messageDiv.className = 'message success';
+            messageDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        function showErrorMessage(message) {
+            const messageDiv = document.getElementById('healthMessage');
+            messageDiv.textContent = message;
+            messageDiv.className = 'message error';
+            messageDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        // Load stored data when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadStoredData();
+        });
+    </script>
+</body>
+</html> 

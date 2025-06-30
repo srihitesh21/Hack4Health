@@ -7,8 +7,11 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/dashboard.css') }}" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
     <div class="container-fluid">
@@ -26,12 +29,17 @@
                         <i class="fas fa-unplug"></i> Disconnect
                     </button>
                 </div>
+                <div class="header-controls">
+                    <button id="connectBtn" class="btn btn-primary">Connect Arduino</button>
+                    <button id="refreshBtn" class="btn btn-secondary">Refresh Data</button>
+                    <a href="/demographics" class="btn btn-info">Health Assessment</a>
+                </div>
             </div>
         </div>
 
         <!-- Real-time Data Cards -->
         <div class="row mb-4">
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <div class="card data-card">
                     <div class="card-body">
                         <div class="d-flex justify-content-between">
@@ -46,7 +54,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <div class="card data-card">
                     <div class="card-body">
                         <div class="d-flex justify-content-between">
@@ -61,7 +69,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <div class="card data-card">
                     <div class="card-body">
                         <div class="d-flex justify-content-between">
@@ -76,7 +84,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <div class="card data-card">
                     <div class="card-body">
                         <div class="d-flex justify-content-between">
@@ -86,6 +94,171 @@
                             </div>
                             <div class="icon-container">
                                 <i class="fas fa-compress-alt"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card data-card heart-rate-card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h5 class="card-title">Heart Rate</h5>
+                                <h2 id="bpm-value">-- BPM</h2>
+                            </div>
+                            <div class="icon-container">
+                                <i class="fas fa-heartbeat"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card data-card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h5 class="card-title">PPG Signal</h5>
+                                <h2 id="ppg-value">--</h2>
+                                <small>Raw Value</small>
+                            </div>
+                            <div class="icon-container">
+                                <i class="fas fa-wave-square"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Heart Rate Analysis Section -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-heartbeat"></i> Heart Rate Analysis</h5>
+                        <button id="request-heart-rate" class="btn btn-sm btn-primary">Request Heart Rate Data</button>
+                        <button id="refresh-csv-analysis" class="btn btn-sm btn-success">
+                            <i class="fas fa-sync-alt"></i> Refresh A.csv Analysis
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="heart-rate-chart-container">
+                            <canvas id="heartRateChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-chart-area"></i> PPG Spectrogram</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="spectrogram-container">
+                            <img id="spectrogram-image" src="" alt="PPG Spectrogram" style="max-width: 100%; display: none;">
+                            <div id="spectrogram-placeholder" class="text-center text-muted">
+                                <i class="fas fa-chart-area fa-3x mb-3"></i>
+                                <p>Spectrogram will appear here when heart rate data is available</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- A.csv Analysis Results Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-file-csv"></i> BPM Analysis Results</h5>
+                        <small class="text-muted">Automatic analysis of the A.csv file from BPM directory</small>
+                    </div>
+                    <div class="card-body">
+                        <div id="csv-analysis-display">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="analysis-card">
+                                        <h6>Estimated BPM</h6>
+                                        <h3 id="csv-bpm-display">--</h3>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="analysis-card">
+                                        <h6>Analysis Time</h6>
+                                        <h3 id="csv-time-display">--</h3>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="analysis-card">
+                                        <h6>Status</h6>
+                                        <h3 id="csv-status-display">Loading...</h3>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="analysis-card">
+                                        <h6>Heart Rate</h6>
+                                        <h3 id="heartRate">--</h3>
+                                        <div class="unit">BPM</div>
+                                        <div class="heartbeat-animation"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Risk Assessment Cards -->
+                            <div class="row mt-3">
+                                <div class="col-md-4">
+                                    <div class="card risk-card">
+                                        <div class="card-body">
+                                            <h5 class="card-title"><i class="fas fa-bacteria"></i> Infection Risk</h5>
+                                            <div class="value" id="infectionRisk">--</div>
+                                            <div class="risk-indicator" id="infectionIndicator"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card risk-card">
+                                        <div class="card-body">
+                                            <h5 class="card-title"><i class="fas fa-tint-slash"></i> Dehydration Risk</h5>
+                                            <div class="value" id="dehydrationRisk">--</div>
+                                            <div class="risk-indicator" id="dehydrationIndicator"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card risk-card">
+                                        <div class="card-body">
+                                            <h5 class="card-title"><i class="fas fa-heartbeat"></i> Arrhythmia Risk</h5>
+                                            <div class="value" id="arrhythmiaRisk">--</div>
+                                            <div class="risk-indicator" id="arrhythmiaIndicator"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row mt-3">
+                                <div class="col-md-6">
+                                    <h6>Time Domain Signal</h6>
+                                    <div id="time-domain-container">
+                                        <img id="time-domain-image" src="" alt="Time Domain Signal" style="max-width: 100%; display: none;">
+                                        <div id="time-domain-placeholder" class="text-center text-muted">
+                                            <i class="fas fa-chart-line fa-2x mb-2"></i>
+                                            <p>Time domain plot will appear here</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6>Spectrogram</h6>
+                                    <div id="csv-spectrogram-container">
+                                        <img id="csv-spectrogram-image" src="" alt="CSV Spectrogram" style="max-width: 100%; display: none;">
+                                        <div id="csv-spectrogram-placeholder" class="text-center text-muted">
+                                            <i class="fas fa-chart-area fa-2x mb-2"></i>
+                                            <p>Spectrogram will appear here</p>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -128,6 +301,27 @@
                     <div class="card-body">
                         <div id="data-log" class="data-log"></div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Emergency Services Section -->
+        <div class="section">
+            <h2>Emergency Services</h2>
+            <div class="cards-container">
+                <div class="card hospital-info">
+                    <h3>🏥 Nearest Hospital</h3>
+                    <div class="location-input">
+                        <input type="text" id="locationInput" placeholder="Enter your address or location..." />
+                        <button onclick="findNearestHospital()">Find Hospital</button>
+                    </div>
+                    <div id="hospitalInfo">
+                        <p>Enter your location above to find the nearest hospital</p>
+                    </div>
+                </div>
+                <div class="card map-container">
+                    <h3>📍 Hospital Location</h3>
+                    <div id="hospitalMap" style="height: 300px; width: 100%;"></div>
                 </div>
             </div>
         </div>

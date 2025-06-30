@@ -1,29 +1,65 @@
 #!/bin/bash
 
-# Arduino Dashboard Startup Script
+# Health Monitoring Dashboard Startup Script
+# Unified Dashboard with Health Monitoring and Heat Stroke Assessment
 
-echo "🚀 Starting Arduino Dashboard..."
-echo ""
+echo "=========================================="
+echo "Health Monitoring Dashboard"
+echo "Unified Interface with Heat Stroke Assessment"
+echo "=========================================="
 
 # Check if Python is installed
 if ! command -v python3 &> /dev/null; then
-    echo "❌ Python 3 is not installed. Please install Python 3.7 or higher."
+    echo "Error: Python 3 is not installed. Please install Python 3.7+"
     exit 1
 fi
 
-# Check if requirements are installed
-if ! python3 -c "import flask, flask_socketio, serial" &> /dev/null; then
-    echo "📦 Installing Python dependencies..."
-    pip3 install -r requirements.txt
-    echo ""
+# Check if pip is installed
+if ! command -v pip3 &> /dev/null; then
+    echo "Error: pip3 is not installed. Please install pip3"
+    exit 1
 fi
 
-# Start the dashboard
-echo "🌐 Starting web server..."
-echo "📱 Open your browser and go to: http://localhost:5000"
-echo "🔌 Connect your Arduino and click 'Connect Arduino' in the dashboard"
+# Create virtual environment if it doesn't exist
+if [ ! -d "venv" ]; then
+    echo "Creating virtual environment..."
+    python3 -m venv venv
+fi
+
+# Activate virtual environment
+echo "Activating virtual environment..."
+source venv/bin/activate
+
+# Install/upgrade pip
+echo "Upgrading pip..."
+pip install --upgrade pip
+
+# Install requirements
+echo "Installing requirements..."
+pip install -r requirements.txt
+
+# Create data directory
+mkdir -p data
+
+echo ""
+echo "=========================================="
+echo "Starting Health Monitoring Dashboard..."
+echo "=========================================="
+echo ""
+echo "Dashboard Features:"
+echo "✓ Real-time Health Monitoring"
+echo "✓ Heart Rate & Temperature Charts"
+echo "✓ Activity & Humidity Tracking"
+echo "✓ Heat Stroke Risk Assessment"
+echo "✓ User Profile Management"
+echo "✓ Assessment History"
+echo "✓ Emergency Alerts"
+echo ""
+echo "Access the dashboard at: http://localhost:5000"
+echo "Health check endpoint: http://localhost:5000/health"
 echo ""
 echo "Press Ctrl+C to stop the server"
 echo ""
 
+# Start the dashboard
 python3 arduino_dashboard.py 

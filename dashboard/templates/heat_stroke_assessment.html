@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heat Stroke Assessment - Health Monitoring Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/dashboard.css') }}" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+</head>
+<body>
+    <div class="container-fluid">
+        <!-- Header -->
+        <div class="row header">
+            <div class="col-12">
+                <h1><i class="fas fa-thermometer-full"></i> Heat Stroke Assessment</h1>
+                <p class="text-muted">Comprehensive heat stroke risk assessment based on medical guidelines</p>
+            </div>
+        </div>
+
+        <!-- Assessment Form -->
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-clipboard-list"></i> Heat Stroke Assessment Form</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="heat-stroke-assessment-form">
+                            <!-- Core Temperature Assessment -->
+                            <div class="assessment-section">
+                                <h6 class="section-title"><i class="fas fa-thermometer-half"></i> Core Temperature Assessment</h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="core-temp" class="form-label">Core Body Temperature (°F)</label>
+                                            <input type="number" class="form-control" id="core-temp" name="core_temp" 
+                                                   step="0.1" min="90" max="110" placeholder="e.g., 98.6">
+                                            <small class="form-text text-muted">Rectal temperature is most accurate for heat stroke assessment</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="temp-method" class="form-label">Temperature Measurement Method</label>
+                                            <select class="form-select" id="temp-method" name="temp_method">
+                                                <option value="rectal">Rectal (Most Accurate)</option>
+                                                <option value="oral">Oral</option>
+                                                <option value="ear">Ear</option>
+                                                <option value="forehead">Forehead</option>
+                                                <option value="temporal">Temporal</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Mental Status Evaluation -->
+                            <div class="assessment-section">
+                                <h6 class="section-title"><i class="fas fa-brain"></i> Mental Status Evaluation</h6>
+                                <div class="form-group">
+                                    <label for="mental-status" class="form-label">Mental Status</label>
+                                    <select class="form-select" id="mental-status" name="mental_status" required>
+                                        <option value="">Select mental status</option>
+                                        <option value="normal">Normal</option>
+                                        <option value="confused">Confused</option>
+                                        <option value="disoriented">Disoriented</option>
+                                        <option value="agitated">Agitated</option>
+                                        <option value="delirious">Delirious</option>
+                                        <option value="hallucinating">Hallucinating</option>
+                                        <option value="unconscious">Unconscious</option>
+                                        <option value="seizure">Seizure</option>
+                                        <option value="slurred_speech">Slurred Speech</option>
+                                        <option value="drowsy">Drowsy</option>
+                                        <option value="lethargic">Lethargic</option>
+                                        <option value="irritable">Irritable</option>
+                                    </select>
+                                    <small class="form-text text-muted">Central nervous system dysfunction is hallmark of heat stroke</small>
+                                </div>
+                            </div>
+
+                            <!-- Vital Signs -->
+                            <div class="assessment-section">
+                                <h6 class="section-title"><i class="fas fa-heartbeat"></i> Vital Signs</h6>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="heart-rate" class="form-label">Heart Rate (BPM)</label>
+                                            <input type="number" class="form-control" id="heart-rate" name="heart_rate" 
+                                                   min="40" max="200" placeholder="e.g., 80">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="respiratory-rate" class="form-label">Respiratory Rate (per min)</label>
+                                            <input type="number" class="form-control" id="respiratory-rate" name="respiratory_rate" 
+                                                   min="8" max="50" placeholder="e.g., 16">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="blood-pressure" class="form-label">Blood Pressure</label>
+                                            <input type="text" class="form-control" id="blood-pressure" name="blood_pressure" 
+                                                   placeholder="e.g., 120/80">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Environmental Factors -->
+                            <div class="assessment-section">
+                                <h6 class="section-title"><i class="fas fa-sun"></i> Environmental Factors</h6>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="env-temp" class="form-label">Environmental Temperature (°F)</label>
+                                            <input type="number" class="form-control" id="env-temp" name="env_temp" 
+                                                   min="50" max="120" placeholder="e.g., 85">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="humidity" class="form-label">Humidity (%)</label>
+                                            <input type="number" class="form-control" id="humidity" name="humidity" 
+                                                   min="0" max="100" placeholder="e.g., 60">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="activity-level" class="form-label">Activity Level</label>
+                                            <select class="form-select" id="activity-level" name="activity_level">
+                                                <option value="resting">Resting</option>
+                                                <option value="light">Light Activity</option>
+                                                <option value="moderate">Moderate Exercise</option>
+                                                <option value="strenuous">Strenuous Exercise</option>
+                                                <option value="extreme">Extreme Exercise</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Symptoms Assessment -->
+                            <div class="assessment-section">
+                                <h6 class="section-title"><i class="fas fa-exclamation-triangle"></i> Symptoms Assessment</h6>
+                                <div class="form-group">
+                                    <label class="form-label">Select all applicable symptoms:</label>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="headache" name="symptoms" value="headache">
+                                                <label class="form-check-label" for="headache">Headache</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="dizziness" name="symptoms" value="dizziness">
+                                                <label class="form-check-label" for="dizziness">Dizziness</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="nausea" name="symptoms" value="nausea">
+                                                <label class="form-check-label" for="nausea">Nausea</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="vomiting" name="symptoms" value="vomiting">
+                                                <label class="form-check-label" for="vomiting">Vomiting</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="muscle_cramps" name="symptoms" value="muscle_cramps">
+                                                <label class="form-check-label" for="muscle_cramps">Muscle Cramps</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="weakness" name="symptoms" value="weakness">
+                                                <label class="form-check-label" for="weakness">Weakness</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="fatigue" name="symptoms" value="fatigue">
+                                                <label class="form-check-label" for="fatigue">Fatigue</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="hot_skin" name="symptoms" value="hot_skin">
+                                                <label class="form-check-label" for="hot_skin">Hot Skin</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="dry_skin" name="symptoms" value="dry_skin">
+                                                <label class="form-check-label" for="dry_skin">Dry Skin</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="rapid_breathing" name="symptoms" value="rapid_breathing">
+                                                <label class="form-check-label" for="rapid_breathing">Rapid Breathing</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Medical History -->
+                            <div class="assessment-section">
+                                <h6 class="section-title"><i class="fas fa-notes-medical"></i> Medical History & Risk Factors</h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="age" class="form-label">Age</label>
+                                            <input type="number" class="form-control" id="age" name="age" 
+                                                   min="0" max="120" placeholder="e.g., 35">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="hydration-status" class="form-label">Hydration Status</label>
+                                            <select class="form-select" id="hydration-status" name="hydration_status">
+                                                <option value="well_hydrated">Well Hydrated</option>
+                                                <option value="mildly_dehydrated">Mildly Dehydrated</option>
+                                                <option value="dehydrated">Dehydrated</option>
+                                                <option value="severely_dehydrated">Severely Dehydrated</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-group mt-3">
+                                    <label class="form-label">Medical Conditions (select all that apply):</label>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="heart_disease" name="medical_history" value="heart_disease">
+                                                <label class="form-check-label" for="heart_disease">Heart Disease</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="diabetes" name="medical_history" value="diabetes">
+                                                <label class="form-check-label" for="diabetes">Diabetes</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="respiratory_condition" name="medical_history" value="respiratory_condition">
+                                                <label class="form-check-label" for="respiratory_condition">Respiratory Condition</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="mental_illness" name="medical_history" value="mental_illness">
+                                                <label class="form-check-label" for="mental_illness">Mental Illness</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="obesity" name="medical_history" value="obesity">
+                                                <label class="form-check-label" for="obesity">Obesity</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="dehydration" name="medical_history" value="dehydration">
+                                                <label class="form-check-label" for="dehydration">Chronic Dehydration</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Submit Button -->
+                            <div class="assessment-section">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-calculator"></i> Assess Heat Stroke Risk
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Assessment Results -->
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-chart-pie"></i> Assessment Results</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="assessment-results">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i> Complete the assessment form to see results.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Risk Trend Chart -->
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h5><i class="fas fa-chart-line"></i> Risk Trend</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="riskTrendChart" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Assessment History -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-history"></i> Assessment History</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="assessment-history" class="assessment-history">
+                            <p class="text-muted">No assessments recorded yet.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/heat_stroke_assessment.js') }}"></script>
+</body>
+</html> 

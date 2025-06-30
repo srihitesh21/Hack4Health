@@ -1,312 +1,514 @@
-// Initialize Socket.IO connection
-const socket = io();
+// Dashboard JavaScript for Health Monitoring
+let socket;
+let heartRateChart, activityChart;
+let dataPoints = [];
+let maxDataPoints = 50;
 
-// Chart instances
-let tempHumidityChart;
-let lightPressureChart;
-
-// Data storage for charts
-let chartData = {
-    labels: [],
-    temperature: [],
-    humidity: [],
-    light: [],
-    pressure: []
-};
-
-// DOM elements
-const statusIndicator = document.getElementById('status-indicator');
-const statusText = document.getElementById('status-text');
-const connectBtn = document.getElementById('connect-btn');
-const disconnectBtn = document.getElementById('disconnect-btn');
-const clearLogBtn = document.getElementById('clear-log');
-const dataLog = document.getElementById('data-log');
-
-// Initialize dashboard
+// Initialize dashboard when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     initializeCharts();
-    setupEventListeners();
-    requestInitialData();
+    initializeEventListeners();
+    loadUserProfile();
+    updateConnectionStatus(false);
 });
 
+// Initialize Chart.js charts
 function initializeCharts() {
-    // Temperature & Humidity Chart
-    const tempHumidityCtx = document.getElementById('tempHumidityChart').getContext('2d');
-    tempHumidityChart = new Chart(tempHumidityCtx, {
-        type: 'line',
-        data: {
-            labels: [],
-            datasets: [
-                {
-                    label: 'Temperature (°C)',
+    const heartRateCtx = document.getElementById('heartRateTempChart');
+    const activityCtx = document.getElementById('activityHumidityChart');
+    
+    if (heartRateCtx) {
+        heartRateChart = new Chart(heartRateCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Heart Rate (BPM)',
                     data: [],
                     borderColor: '#e74c3c',
                     backgroundColor: 'rgba(231, 76, 60, 0.1)',
                     tension: 0.4,
-                    fill: true
-                },
-                {
-                    label: 'Humidity (%)',
-                    data: [],
-                    borderColor: '#3498db',
-                    backgroundColor: 'rgba(52, 152, 219, 0.1)',
-                    tension: 0.4,
-                    fill: true
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'top',
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: false,
-                    grid: {
-                        color: 'rgba(0, 0, 0, 0.1)'
-                    }
-                },
-                x: {
-                    grid: {
-                        color: 'rgba(0, 0, 0, 0.1)'
-                    }
-                }
-            }
-        }
-    });
-
-    // Light & Pressure Chart
-    const lightPressureCtx = document.getElementById('lightPressureChart').getContext('2d');
-    lightPressureChart = new Chart(lightPressureCtx, {
-        type: 'line',
-        data: {
-            labels: [],
-            datasets: [
-                {
-                    label: 'Light',
+                    yAxisID: 'y'
+                }, {
+                    label: 'Temperature (°C)',
                     data: [],
                     borderColor: '#f39c12',
                     backgroundColor: 'rgba(243, 156, 18, 0.1)',
                     tension: 0.4,
-                    fill: true
+                    yAxisID: 'y1'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
                 },
-                {
-                    label: 'Pressure (hPa)',
+                scales: {
+                    x: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: 'Time'
+                        }
+                    },
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: 'Heart Rate (BPM)'
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: 'Temperature (°C)'
+                        },
+                        grid: {
+                            drawOnChartArea: false,
+                        },
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    }
+                }
+            }
+        });
+    }
+    
+    if (activityCtx) {
+        activityChart = new Chart(activityCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Activity Level',
+                    data: [],
+                    borderColor: '#3498db',
+                    backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                    tension: 0.4,
+                    yAxisID: 'y'
+                }, {
+                    label: 'Humidity (%)',
                     data: [],
                     borderColor: '#9b59b6',
                     backgroundColor: 'rgba(155, 89, 182, 0.1)',
                     tension: 0.4,
-                    fill: true
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'top',
-                }
+                    yAxisID: 'y1'
+                }]
             },
-            scales: {
-                y: {
-                    beginAtZero: false,
-                    grid: {
-                        color: 'rgba(0, 0, 0, 0.1)'
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                scales: {
+                    x: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: 'Time'
+                        }
+                    },
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: 'Activity Level'
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: 'Humidity (%)'
+                        },
+                        grid: {
+                            drawOnChartArea: false,
+                        },
                     }
                 },
-                x: {
-                    grid: {
-                        color: 'rgba(0, 0, 0, 0.1)'
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
                     }
                 }
             }
-        }
-    });
-}
-
-function setupEventListeners() {
-    // Connect button
-    connectBtn.addEventListener('click', function() {
-        socket.emit('connect_arduino');
-        this.disabled = true;
-        this.innerHTML = '<span class="loading"></span> Connecting...';
-    });
-
-    // Disconnect button
-    disconnectBtn.addEventListener('click', function() {
-        socket.emit('disconnect_arduino');
-    });
-
-    // Clear log button
-    clearLogBtn.addEventListener('click', function() {
-        dataLog.innerHTML = '';
-    });
-}
-
-function requestInitialData() {
-    socket.emit('request_data');
-}
-
-// Socket.IO event handlers
-socket.on('connect', function() {
-    console.log('Connected to server');
-});
-
-socket.on('connection_status', function(data) {
-    updateConnectionStatus(data);
-});
-
-socket.on('arduino_data', function(data) {
-    updateDashboard(data);
-    addToDataLog(data);
-});
-
-socket.on('sensor_data', function(data) {
-    // Load historical data into charts
-    if (data.temperature && data.temperature.length > 0) {
-        loadHistoricalData(data);
+        });
     }
-});
+}
 
-function updateConnectionStatus(data) {
-    if (data.connected) {
-        statusIndicator.classList.add('connected');
+// Initialize event listeners
+function initializeEventListeners() {
+    // Connection buttons
+    const connectBtn = document.getElementById('connect-btn');
+    const disconnectBtn = document.getElementById('disconnect-btn');
+    
+    if (connectBtn) {
+        connectBtn.addEventListener('click', connectToDevice);
+    }
+    
+    if (disconnectBtn) {
+        disconnectBtn.addEventListener('click', disconnectFromDevice);
+    }
+    
+    // User profile form
+    const userProfileForm = document.getElementById('user-profile-form');
+    if (userProfileForm) {
+        userProfileForm.addEventListener('submit', saveUserProfile);
+    }
+    
+    // Clear log button
+    const clearLogBtn = document.getElementById('clear-log');
+    if (clearLogBtn) {
+        clearLogBtn.addEventListener('click', clearDataLog);
+    }
+    
+    // Tab switching
+    const assessmentTab = document.getElementById('assessment-tab');
+    if (assessmentTab) {
+        assessmentTab.addEventListener('click', function() {
+            // Trigger any assessment-specific initialization if needed
+            console.log('Switched to assessment tab');
+        });
+    }
+}
+
+// Connect to Arduino device
+function connectToDevice() {
+    if (socket) {
+        socket.disconnect();
+    }
+    
+    socket = io();
+    
+    socket.on('connect', function() {
+        console.log('Connected to server');
+        updateConnectionStatus(true);
+        
+        // Request connection to Arduino
+        socket.emit('connect_arduino');
+    });
+    
+    socket.on('disconnect', function() {
+        console.log('Disconnected from server');
+        updateConnectionStatus(false);
+    });
+    
+    socket.on('arduino_data', function(data) {
+        console.log('Received Arduino data:', data);
+        updateDashboard(data);
+        addToDataLog(data);
+        updateHealthInsights(data);
+    });
+    
+    socket.on('connection_status', function(status) {
+        console.log('Arduino connection status:', status);
+        updateConnectionStatus(status.connected);
+    });
+    
+    socket.on('error', function(error) {
+        console.error('Socket error:', error);
+        showAlert('Connection error: ' + error.message, 'danger');
+    });
+}
+
+// Disconnect from Arduino device
+function disconnectFromDevice() {
+    if (socket) {
+        socket.emit('disconnect_arduino');
+        socket.disconnect();
+        socket = null;
+    }
+    updateConnectionStatus(false);
+}
+
+// Update connection status UI
+function updateConnectionStatus(connected) {
+    const statusIndicator = document.getElementById('status-indicator');
+    const statusText = document.getElementById('status-text');
+    const connectBtn = document.getElementById('connect-btn');
+    const disconnectBtn = document.getElementById('disconnect-btn');
+    
+    if (connected) {
+        statusIndicator.className = 'status-dot connected';
         statusText.textContent = 'Connected';
         connectBtn.style.display = 'none';
         disconnectBtn.style.display = 'inline-block';
-        
-        // Reset connect button
-        connectBtn.disabled = false;
-        connectBtn.innerHTML = '<i class="fas fa-plug"></i> Connect Arduino';
     } else {
-        statusIndicator.classList.remove('connected');
-        statusText.textContent = data.message || 'Disconnected';
+        statusIndicator.className = 'status-dot';
+        statusText.textContent = 'Disconnected';
         connectBtn.style.display = 'inline-block';
         disconnectBtn.style.display = 'none';
-        
-        // Reset connect button
-        connectBtn.disabled = false;
-        connectBtn.innerHTML = '<i class="fas fa-plug"></i> Connect Arduino';
     }
 }
 
+// Update dashboard with new data
 function updateDashboard(data) {
     // Update real-time values
+    if (data.heart_rate !== undefined) {
+        document.getElementById('heart-rate-value').textContent = data.heart_rate + ' BPM';
+    }
     if (data.temperature !== undefined) {
-        document.getElementById('temp-value').textContent = `${data.temperature.toFixed(1)}°C`;
+        document.getElementById('temp-value').textContent = data.temperature + '°C';
     }
     if (data.humidity !== undefined) {
-        document.getElementById('humidity-value').textContent = `${data.humidity.toFixed(1)}%`;
+        document.getElementById('humidity-value').textContent = data.humidity + '%';
     }
-    if (data.light !== undefined) {
-        document.getElementById('light-value').textContent = data.light.toFixed(0);
+    if (data.activity_level !== undefined) {
+        document.getElementById('activity-value').textContent = data.activity_level;
     }
-    if (data.pressure !== undefined) {
-        document.getElementById('pressure-value').textContent = `${data.pressure.toFixed(1)} hPa`;
-    }
-
+    
     // Update charts
     updateCharts(data);
 }
 
+// Update charts with new data
 function updateCharts(data) {
     const timestamp = new Date().toLocaleTimeString();
     
-    // Add new data point
-    chartData.labels.push(timestamp);
-    if (data.temperature !== undefined) chartData.temperature.push(data.temperature);
-    if (data.humidity !== undefined) chartData.humidity.push(data.humidity);
-    if (data.light !== undefined) chartData.light.push(data.light);
-    if (data.pressure !== undefined) chartData.pressure.push(data.pressure);
-
-    // Keep only last 20 data points
-    const maxPoints = 20;
-    if (chartData.labels.length > maxPoints) {
-        chartData.labels.shift();
-        chartData.temperature.shift();
-        chartData.humidity.shift();
-        chartData.light.shift();
-        chartData.pressure.shift();
-    }
-
-    // Update Temperature & Humidity Chart
-    tempHumidityChart.data.labels = chartData.labels;
-    tempHumidityChart.data.datasets[0].data = chartData.temperature;
-    tempHumidityChart.data.datasets[1].data = chartData.humidity;
-    tempHumidityChart.update('none');
-
-    // Update Light & Pressure Chart
-    lightPressureChart.data.labels = chartData.labels;
-    lightPressureChart.data.datasets[0].data = chartData.light;
-    lightPressureChart.data.datasets[1].data = chartData.pressure;
-    lightPressureChart.update('none');
-}
-
-function loadHistoricalData(data) {
-    // Load historical data into charts
-    const timestamps = data.timestamp.map(ts => new Date(ts * 1000).toLocaleTimeString());
+    // Add data point
+    dataPoints.push({
+        timestamp: timestamp,
+        heartRate: data.heart_rate || 0,
+        temperature: data.temperature || 0,
+        activity: data.activity_level || 0,
+        humidity: data.humidity || 0
+    });
     
-    chartData.labels = timestamps.slice(-20); // Last 20 points
-    chartData.temperature = data.temperature.slice(-20);
-    chartData.humidity = data.humidity.slice(-20);
-    chartData.light = data.light.slice(-20);
-    chartData.pressure = data.pressure.slice(-20);
-
-    // Update charts with historical data
-    tempHumidityChart.data.labels = chartData.labels;
-    tempHumidityChart.data.datasets[0].data = chartData.temperature;
-    tempHumidityChart.data.datasets[1].data = chartData.humidity;
-    tempHumidityChart.update();
-
-    lightPressureChart.data.labels = chartData.labels;
-    lightPressureChart.data.datasets[0].data = chartData.light;
-    lightPressureChart.data.datasets[1].data = chartData.pressure;
-    lightPressureChart.update();
+    // Keep only the last maxDataPoints
+    if (dataPoints.length > maxDataPoints) {
+        dataPoints.shift();
+    }
+    
+    // Update heart rate and temperature chart
+    if (heartRateChart) {
+        heartRateChart.data.labels = dataPoints.map(d => d.timestamp);
+        heartRateChart.data.datasets[0].data = dataPoints.map(d => d.heartRate);
+        heartRateChart.data.datasets[1].data = dataPoints.map(d => d.temperature);
+        heartRateChart.update('none');
+    }
+    
+    // Update activity and humidity chart
+    if (activityChart) {
+        activityChart.data.labels = dataPoints.map(d => d.timestamp);
+        activityChart.data.datasets[0].data = dataPoints.map(d => d.activity);
+        activityChart.data.datasets[1].data = dataPoints.map(d => d.humidity);
+        activityChart.update('none');
+    }
 }
 
+// Add data to the log
 function addToDataLog(data) {
-    const timestamp = new Date().toLocaleString();
+    const dataLog = document.getElementById('data-log');
+    if (!dataLog) return;
+    
+    const timestamp = new Date().toLocaleTimeString();
     const logEntry = document.createElement('div');
     logEntry.className = 'log-entry';
     
-    let dataValues = '';
-    if (data.temperature !== undefined) {
-        dataValues += `<span class="data-item">Temp: ${data.temperature.toFixed(1)}°C</span>`;
-    }
-    if (data.humidity !== undefined) {
-        dataValues += `<span class="data-item">Humidity: ${data.humidity.toFixed(1)}%</span>`;
-    }
-    if (data.light !== undefined) {
-        dataValues += `<span class="data-item">Light: ${data.light.toFixed(0)}</span>`;
-    }
-    if (data.pressure !== undefined) {
-        dataValues += `<span class="data-item">Pressure: ${data.pressure.toFixed(1)} hPa</span>`;
-    }
+    let dataValues = [];
+    if (data.heart_rate !== undefined) dataValues.push(`HR: ${data.heart_rate} BPM`);
+    if (data.temperature !== undefined) dataValues.push(`Temp: ${data.temperature}°C`);
+    if (data.humidity !== undefined) dataValues.push(`Humidity: ${data.humidity}%`);
+    if (data.activity_level !== undefined) dataValues.push(`Activity: ${data.activity_level}`);
     
     logEntry.innerHTML = `
-        <div class="timestamp">${timestamp}</div>
-        <div class="data-values">${dataValues}</div>
+        <span class="timestamp">${timestamp}</span>
+        <span class="value">${dataValues.join(' | ')}</span>
     `;
     
     dataLog.insertBefore(logEntry, dataLog.firstChild);
     
-    // Keep only last 50 log entries
-    while (dataLog.children.length > 50) {
-        dataLog.removeChild(dataLog.lastChild);
+    // Keep only the last 50 entries
+    const entries = dataLog.querySelectorAll('.log-entry');
+    if (entries.length > 50) {
+        dataLog.removeChild(entries[entries.length - 1]);
     }
 }
 
-// Handle window resize for responsive charts
-window.addEventListener('resize', function() {
-    if (tempHumidityChart) {
-        tempHumidityChart.resize();
+// Clear data log
+function clearDataLog() {
+    const dataLog = document.getElementById('data-log');
+    if (dataLog) {
+        dataLog.innerHTML = '';
     }
-    if (lightPressureChart) {
-        lightPressureChart.resize();
+}
+
+// Save user profile
+function saveUserProfile(event) {
+    event.preventDefault();
+    
+    const formData = new FormData(event.target);
+    const profile = {
+        age: formData.get('age'),
+        gender: formData.get('gender')
+    };
+    
+    // Save to localStorage
+    localStorage.setItem('userProfile', JSON.stringify(profile));
+    
+    // Send to server
+    if (socket) {
+        socket.emit('save_profile', profile);
     }
-}); 
+    
+    // Update UI
+    displayUserProfile(profile);
+    showAlert('Profile saved successfully!', 'success');
+}
+
+// Load user profile from localStorage
+function loadUserProfile() {
+    const savedProfile = localStorage.getItem('userProfile');
+    if (savedProfile) {
+        const profile = JSON.parse(savedProfile);
+        displayUserProfile(profile);
+        
+        // Populate form fields
+        const ageInput = document.getElementById('user-age');
+        const genderSelect = document.getElementById('user-gender');
+        
+        if (ageInput) ageInput.value = profile.age || '';
+        if (genderSelect) genderSelect.value = profile.gender || '';
+    }
+}
+
+// Display user profile
+function displayUserProfile(profile) {
+    const profileInfo = document.getElementById('profile-info');
+    const profileDisplay = document.getElementById('profile-display');
+    
+    if (profileInfo && profileDisplay) {
+        profileDisplay.textContent = `Age: ${profile.age}, Gender: ${profile.gender}`;
+        profileInfo.style.display = 'block';
+    }
+}
+
+// Update health insights based on data and user profile
+function updateHealthInsights(data) {
+    const insightsContainer = document.getElementById('health-insights');
+    if (!insightsContainer) return;
+    
+    const profile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+    const insights = [];
+    
+    // Heart rate insights
+    if (data.heart_rate) {
+        const hr = data.heart_rate;
+        if (hr < 60) {
+            insights.push({
+                type: 'warning',
+                message: 'Heart rate is below normal range (60-100 BPM)',
+                icon: 'fas fa-heartbeat'
+            });
+        } else if (hr > 100) {
+            insights.push({
+                type: 'warning',
+                message: 'Heart rate is above normal range (60-100 BPM)',
+                icon: 'fas fa-heartbeat'
+            });
+        } else {
+            insights.push({
+                type: 'success',
+                message: 'Heart rate is within normal range',
+                icon: 'fas fa-heartbeat'
+            });
+        }
+    }
+    
+    // Temperature insights
+    if (data.temperature) {
+        const temp = data.temperature;
+        if (temp > 37.5) {
+            insights.push({
+                type: 'danger',
+                message: 'Elevated body temperature detected',
+                icon: 'fas fa-thermometer-half'
+            });
+        } else if (temp < 36.0) {
+            insights.push({
+                type: 'warning',
+                message: 'Body temperature is below normal range',
+                icon: 'fas fa-thermometer-half'
+            });
+        }
+    }
+    
+    // Age-specific insights
+    if (profile.age) {
+        const age = parseInt(profile.age);
+        if (age > 65) {
+            insights.push({
+                type: 'info',
+                message: 'As an older adult, monitor hydration and temperature closely',
+                icon: 'fas fa-user-clock'
+            });
+        }
+    }
+    
+    // Display insights
+    if (insights.length > 0) {
+        insightsContainer.innerHTML = insights.map(insight => `
+            <div class="alert alert-${insight.type}">
+                <i class="${insight.icon}"></i> ${insight.message}
+            </div>
+        `).join('');
+    } else {
+        insightsContainer.innerHTML = `
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> All vital signs appear normal.
+            </div>
+        `;
+    }
+}
+
+// Show alert message
+function showAlert(message, type = 'info') {
+    // Create alert element
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    // Add to page (you can customize where to show it)
+    const container = document.querySelector('.container-fluid');
+    if (container) {
+        container.insertBefore(alertDiv, container.firstChild);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 5000);
+    }
+}
+
+// Export functions for use in other scripts
+window.dashboard = {
+    connectToDevice,
+    disconnectFromDevice,
+    updateDashboard,
+    saveUserProfile,
+    loadUserProfile,
+    showAlert
+}; 

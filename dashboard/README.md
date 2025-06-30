@@ -1,235 +1,254 @@
-# Arduino Dashboard
+# Health Monitoring Dashboard
 
-A real-time web dashboard for monitoring Arduino sensor data with beautiful visualizations and responsive design.
+A comprehensive health monitoring system with real-time sensor data visualization and integrated heat stroke risk assessment. This unified dashboard combines health monitoring capabilities with medical-grade heat stroke assessment tools.
 
 ## Features
 
-- 🔌 **Automatic Arduino Detection** - Automatically finds and connects to your Arduino
-- 📊 **Real-time Charts** - Live updating charts for temperature, humidity, light, and pressure
-- 📱 **Responsive Design** - Works on desktop, tablet, and mobile devices
-- 🔄 **Multiple Data Formats** - Supports JSON, CSV, and key-value data formats
-- 📝 **Data Logging** - Real-time data log with timestamp
-- 🎨 **Modern UI** - Beautiful gradient design with smooth animations
-- ⚡ **WebSocket Communication** - Real-time data updates without page refresh
+### 🏥 Health Monitoring
+- **Real-time Sensor Data**: Monitor heart rate, temperature, humidity, and activity levels
+- **Interactive Charts**: Live-updating charts using Chart.js
+- **Data Logging**: Comprehensive data logging with timestamps
+- **User Profiles**: Personalized health insights based on age and gender
+- **Connection Management**: Easy Arduino device connection/disconnection
 
-## Prerequisites
+### 🌡️ Heat Stroke Assessment
+- **Medical-Grade Assessment**: Based on established medical guidelines
+- **Comprehensive Evaluation**: Core temperature, mental status, vital signs, environmental factors
+- **Risk Scoring**: Advanced risk calculation algorithm
+- **Emergency Alerts**: Critical risk detection with immediate alerts
+- **Personalized Recommendations**: Actionable advice based on risk level
+- **Assessment History**: Track assessment results over time
 
+### 🎯 Unified Interface
+- **Tabbed Navigation**: Seamless switching between monitoring and assessment
+- **Responsive Design**: Works on desktop, tablet, and mobile devices
+- **Real-time Updates**: Live data updates via WebSocket connections
+- **Modern UI**: Clean, professional interface with Bootstrap 5
+
+## Quick Start
+
+### Prerequisites
 - Python 3.7 or higher
-- Arduino board (Uno, Nano, Mega, etc.)
-- USB cable to connect Arduino to computer
-- Sensors (optional - the app includes demo data)
+- pip3
+- Arduino (optional - simulation mode available)
 
-## Installation
+### Installation
 
-1. **Clone or download this project**
+1. **Clone the repository**
    ```bash
-   cd /path/to/arduino-dashboard
+   git clone <repository-url>
+   cd dashboard
    ```
 
-2. **Install Python dependencies**
+2. **Run the startup script**
    ```bash
-   pip install -r requirements.txt
+   chmod +x start_dashboard.sh
+   ./start_dashboard.sh
    ```
 
-3. **Upload Arduino sketch** (optional)
-   - Open `arduino_example.ino` in Arduino IDE
-   - Connect your Arduino via USB
-   - Upload the sketch to your Arduino
+3. **Access the dashboard**
+   - Open your browser and go to: http://localhost:5000
+   - The dashboard will automatically start in simulation mode if no Arduino is connected
+
+### Manual Installation
+
+If you prefer manual installation:
+
+```bash
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run the dashboard
+python3 arduino_dashboard.py
+```
 
 ## Usage
 
-### Starting the Dashboard
+### Health Monitoring Tab
 
-1. **Run the Python application**
-   ```bash
-   python arduino_dashboard.py
-   ```
+1. **Set Up Profile**
+   - Enter your age and gender
+   - Click "Save Profile" to enable personalized insights
 
-2. **Open your web browser**
-   - Navigate to `http://localhost:5000`
-   - The dashboard will automatically appear
+2. **Connect Device**
+   - Click "Connect Device" to connect to Arduino
+   - If no Arduino is available, the system will run in simulation mode
 
-3. **Connect to Arduino**
-   - Click the "Connect Arduino" button
-   - The app will automatically detect your Arduino
-   - If no Arduino is found, it will show a message
+3. **Monitor Data**
+   - View real-time vital signs in the data cards
+   - Watch live-updating charts
+   - Check health insights for personalized recommendations
+   - Review data log for historical information
 
-### Arduino Data Format
+### Heat Stroke Assessment Tab
 
-The dashboard supports three data formats from your Arduino:
+1. **Complete Assessment Form**
+   - **Core Temperature**: Enter body temperature and measurement method
+   - **Mental Status**: Select current mental state (critical for diagnosis)
+   - **Vital Signs**: Input heart rate, respiratory rate, blood pressure
+   - **Environmental Factors**: Enter ambient temperature, humidity, activity level
+   - **Symptoms**: Check all applicable symptoms
+   - **Risk Factors**: Select relevant medical history and risk factors
 
-#### 1. CSV Format (Recommended)
+2. **Review Results**
+   - **Risk Level**: Low, Moderate, High, or Critical
+   - **Risk Score**: Numerical score out of 100
+   - **Emergency Actions**: Immediate steps if critical risk detected
+   - **Recommendations**: Personalized advice based on assessment
+
+3. **Track History**
+   - View previous assessments
+   - Monitor risk trends over time
+   - Access historical recommendations
+
+## Architecture
+
+### Frontend
+- **HTML5**: Semantic markup with Bootstrap 5 framework
+- **CSS3**: Custom styling with responsive design
+- **JavaScript**: 
+  - Chart.js for data visualization
+  - Socket.IO for real-time communication
+  - Custom modules for dashboard and assessment functionality
+
+### Backend
+- **Flask**: Web framework for API endpoints
+- **Flask-SocketIO**: Real-time WebSocket communication
+- **PySerial**: Arduino communication
+- **Custom Assessment Engine**: Medical-grade heat stroke risk calculation
+
+### Data Flow
 ```
-25.5,60.2,512,1013.25
-```
-Format: `temperature,humidity,light,pressure`
-
-#### 2. JSON Format
-```json
-{"temperature": 25.5, "humidity": 60.2, "light": 512, "pressure": 1013.25}
+Arduino Sensors → Serial Communication → Flask Backend → WebSocket → Frontend Charts
+User Input → Assessment Engine → Risk Calculation → Personalized Recommendations
 ```
 
-#### 3. Key-Value Format
+## API Endpoints
+
+### Health Monitoring
+- `GET /` - Main dashboard
+- `GET /health` - Health check endpoint
+- `GET /api/health-data` - Current sensor data
+- `POST /api/profile` - Save user profile
+
+### Heat Stroke Assessment
+- `POST /api/assessment` - Perform assessment
+- `GET /api/assessment-history` - Assessment history
+
+### WebSocket Events
+- `arduino_data` - Real-time sensor data
+- `connection_status` - Device connection status
+- `heat_stroke_assessment` - Assessment submission
+- `assessment_result` - Assessment results
+- `emergency_alert` - Critical risk alerts
+
+## Arduino Integration
+
+### Hardware Requirements
+- Arduino board (Uno, Nano, or similar)
+- Heart rate sensor (Pulse sensor, MAX30100, etc.)
+- Temperature sensor (DHT22, LM35, etc.)
+- Humidity sensor (DHT22, etc.)
+- Activity sensor (accelerometer, etc.)
+
+### Arduino Code
+See `arduino_health_example.ino` for a complete example that includes:
+- Heart rate monitoring
+- Temperature and humidity sensing
+- Activity level detection
+- Serial communication protocol
+
+### Data Format
+Arduino should send data in this format:
 ```
-temperature:25.5,humidity:60.2,light:512,pressure:1013.25
+HR:75,TEMP:37.2,HUM:65,ACT:moderate
 ```
 
-### Arduino Sketch Setup
+## Heat Stroke Assessment Guidelines
 
-1. **Basic Setup**
-   ```cpp
-   void setup() {
-     Serial.begin(9600);
-   }
-   ```
+The assessment system is based on established medical guidelines:
 
-2. **Send Data**
-   ```cpp
-   void loop() {
-     // Read your sensors
-     float temp = readTemperature();
-     float humidity = readHumidity();
-     int light = readLight();
-     float pressure = readPressure();
-     
-     // Send in CSV format
-     Serial.print(temp, 1);
-     Serial.print(",");
-     Serial.print(humidity, 1);
-     Serial.print(",");
-     Serial.print(light);
-     Serial.print(",");
-     Serial.println(pressure, 2);
-     
-     delay(1000); // Send every second
-   }
-   ```
+### Critical Indicators
+- **Core Temperature ≥ 104°F (40°C)**
+- **Mental Status Changes**: Confusion, delirium, unconsciousness, seizures
+- **Multiple Risk Factors**: Age >65, cardiovascular disease, medications
+
+### Risk Levels
+- **Low Risk (0-49)**: Normal monitoring, hydration
+- **Moderate Risk (50-79)**: Cool environment, rest, medical evaluation if needed
+- **High Risk (80-99)**: Immediate medical attention, cooling measures
+- **Critical Risk (100+)**: Emergency medical care, call 911
+
+### Emergency Actions
+- Move to cool environment
+- Remove excess clothing
+- Apply cool compresses
+- Call emergency services if critical
+- Monitor vital signs continuously
 
 ## Configuration
 
-### Port Settings
+### Environment Variables
+- `FLASK_ENV`: Set to 'development' for debug mode
+- `ARDUINO_PORT`: Custom Arduino port (default: auto-detect)
 
-The app automatically detects Arduino ports. If you need to specify a custom port, edit `arduino_dashboard.py`:
-
-```python
-# Change this line in the find_arduino_port() function
-ports = glob.glob('/dev/tty.usbmodem*') + glob.glob('/dev/ttyACM*') + glob.glob('COM*')
-```
-
-### Baud Rate
-
-Default baud rate is 9600. To change it, modify:
-
-```python
-BAUD_RATE = 9600  # Change to your Arduino's baud rate
-```
-
-### Data Update Interval
-
-Change how often data is sent from Arduino by modifying the `TRANSMISSION_INTERVAL` in the Arduino sketch:
-
-```cpp
-const unsigned long TRANSMISSION_INTERVAL = 1000; // 1 second
-```
+### Customization
+- Modify `dashboard.css` for styling changes
+- Update assessment parameters in `heat_stroke_assessment.py`
+- Adjust chart configurations in `dashboard.js`
 
 ## Troubleshooting
 
-### Arduino Not Detected
+### Common Issues
 
-1. **Check USB connection**
-   - Ensure Arduino is properly connected via USB
-   - Try a different USB cable or port
+1. **Arduino Connection Failed**
+   - Check USB connection
+   - Verify correct port in Arduino IDE
+   - Ensure Arduino code is uploaded
 
-2. **Check port permissions** (Linux/macOS)
-   ```bash
-   sudo chmod 666 /dev/ttyUSB0
-   ```
+2. **Charts Not Updating**
+   - Check browser console for JavaScript errors
+   - Verify WebSocket connection status
+   - Refresh page if needed
 
-3. **Verify Arduino IDE connection**
-   - Open Arduino IDE
-   - Check if Arduino appears in Tools > Port menu
+3. **Assessment Not Working**
+   - Ensure all required fields are filled
+   - Check browser console for errors
+   - Verify mental status is selected
 
-### No Data Displayed
-
-1. **Check Arduino serial output**
-   - Open Arduino IDE Serial Monitor
-   - Verify data is being sent in correct format
-
-2. **Check baud rate**
-   - Ensure Arduino and Python app use same baud rate (default: 9600)
-
-3. **Check data format**
-   - Verify Arduino sends data in one of the supported formats
-   - Check for extra characters or formatting issues
-
-### Dashboard Not Loading
-
-1. **Check Python dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-2. **Check port availability**
-   - Ensure port 5000 is not in use
-   - Change port in `arduino_dashboard.py` if needed
-
-3. **Check firewall settings**
-   - Allow Python/Flask through firewall
-
-## File Structure
-
+### Debug Mode
+Enable debug mode by setting environment variable:
+```bash
+export FLASK_ENV=development
 ```
-arduino-dashboard/
-├── arduino_dashboard.py      # Main Python application
-├── requirements.txt          # Python dependencies
-├── arduino_example.ino       # Example Arduino sketch
-├── README.md                 # This file
-├── templates/
-│   └── dashboard.html        # Dashboard HTML template
-└── static/
-    ├── css/
-    │   └── dashboard.css     # Dashboard styles
-    └── js/
-        └── dashboard.js      # Dashboard JavaScript
-```
-
-## Customization
-
-### Adding New Sensors
-
-1. **Modify Arduino sketch**
-   - Add new sensor reading functions
-   - Include new data in serial output
-
-2. **Update Python parser**
-   - Modify `parse_arduino_data()` function in `arduino_dashboard.py`
-   - Add new sensor to `sensor_data` dictionary
-
-3. **Update dashboard**
-   - Add new data cards in `dashboard.html`
-   - Update JavaScript in `dashboard.js`
-   - Add new chart datasets
-
-### Changing Dashboard Theme
-
-Edit `static/css/dashboard.css` to customize:
-- Colors and gradients
-- Card styles and animations
-- Typography and spacing
-- Responsive breakpoints
 
 ## Contributing
 
-Feel free to submit issues, feature requests, or pull requests to improve this project.
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
 
 ## License
 
-This project is open source and available under the MIT License.
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Medical Disclaimer
+
+This system is for educational and monitoring purposes only. It is not a substitute for professional medical advice, diagnosis, or treatment. Always seek the advice of qualified healthcare providers for medical concerns.
 
 ## Support
 
-If you encounter any issues or have questions:
-1. Check the troubleshooting section above
-2. Review the Arduino serial monitor output
-3. Check the Python console for error messages
-4. Ensure all dependencies are properly installed 
+For support and questions:
+- Check the troubleshooting section
+- Review the API documentation
+- Open an issue on GitHub
+
+---
+
+**Health Monitoring Dashboard** - Empowering health awareness through technology 

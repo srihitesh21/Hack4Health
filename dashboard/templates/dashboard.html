@@ -33,72 +33,14 @@
                     <button id="connectBtn" class="btn btn-primary">Connect Arduino</button>
                     <button id="refreshBtn" class="btn btn-secondary">Refresh Data</button>
                     <a href="/demographics" class="btn btn-info">Health Assessment</a>
+                    <a href="/stress_fatigue_analysis" class="btn btn-warning">🧠 Stress Analysis</a>
+                    <a href="/demographics#heatstrokeSection" class="btn btn-danger">🌡️ Heatstroke Risk</a>
                 </div>
             </div>
         </div>
 
         <!-- Real-time Data Cards -->
         <div class="row mb-4">
-            <div class="col-md-2">
-                <div class="card data-card">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <h5 class="card-title">Temperature</h5>
-                                <h2 id="temp-value">--°C</h2>
-                            </div>
-                            <div class="icon-container">
-                                <i class="fas fa-thermometer-half"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-2">
-                <div class="card data-card">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <h5 class="card-title">Humidity</h5>
-                                <h2 id="humidity-value">--%</h2>
-                            </div>
-                            <div class="icon-container">
-                                <i class="fas fa-tint"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-2">
-                <div class="card data-card">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <h5 class="card-title">Light</h5>
-                                <h2 id="light-value">--</h2>
-                            </div>
-                            <div class="icon-container">
-                                <i class="fas fa-sun"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-2">
-                <div class="card data-card">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <h5 class="card-title">Pressure</h5>
-                                <h2 id="pressure-value">-- hPa</h2>
-                            </div>
-                            <div class="icon-container">
-                                <i class="fas fa-compress-alt"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
             <div class="col-md-2">
                 <div class="card data-card heart-rate-card">
                     <div class="card-body">
@@ -109,58 +51,6 @@
                             </div>
                             <div class="icon-container">
                                 <i class="fas fa-heartbeat"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-2">
-                <div class="card data-card">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <h5 class="card-title">PPG Signal</h5>
-                                <h2 id="ppg-value">--</h2>
-                                <small>Raw Value</small>
-                            </div>
-                            <div class="icon-container">
-                                <i class="fas fa-wave-square"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Heart Rate Analysis Section -->
-        <div class="row mb-4">
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header">
-                        <h5><i class="fas fa-heartbeat"></i> Heart Rate Analysis</h5>
-                        <button id="request-heart-rate" class="btn btn-sm btn-primary">Request Heart Rate Data</button>
-                        <button id="refresh-csv-analysis" class="btn btn-sm btn-success">
-                            <i class="fas fa-sync-alt"></i> Refresh A.csv Analysis
-                        </button>
-                    </div>
-                    <div class="card-body">
-                        <div id="heart-rate-chart-container">
-                            <canvas id="heartRateChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header">
-                        <h5><i class="fas fa-chart-area"></i> PPG Spectrogram</h5>
-                    </div>
-                    <div class="card-body">
-                        <div id="spectrogram-container">
-                            <img id="spectrogram-image" src="" alt="PPG Spectrogram" style="max-width: 100%; display: none;">
-                            <div id="spectrogram-placeholder" class="text-center text-muted">
-                                <i class="fas fa-chart-area fa-3x mb-3"></i>
-                                <p>Spectrogram will appear here when heart rate data is available</p>
                             </div>
                         </div>
                     </div>
@@ -206,10 +96,9 @@
                                     </div>
                                 </div>
                             </div>
-                            
                             <!-- Risk Assessment Cards -->
                             <div class="row mt-3">
-                                <div class="col-md-4">
+                                <div class="col-md-3">
                                     <div class="card risk-card">
                                         <div class="card-body">
                                             <h5 class="card-title"><i class="fas fa-bacteria"></i> Infection Risk</h5>
@@ -218,7 +107,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-3">
                                     <div class="card risk-card">
                                         <div class="card-body">
                                             <h5 class="card-title"><i class="fas fa-tint-slash"></i> Dehydration Risk</h5>
@@ -227,7 +116,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-3">
                                     <div class="card risk-card">
                                         <div class="card-body">
                                             <h5 class="card-title"><i class="fas fa-heartbeat"></i> Arrhythmia Risk</h5>
@@ -236,8 +125,19 @@
                                         </div>
                                     </div>
                                 </div>
+                                <div class="col-md-3">
+                                    <div class="card risk-card heatstroke-card">
+                                        <div class="card-body">
+                                            <h5 class="card-title"><i class="fas fa-thermometer-half"></i> Heatstroke Risk</h5>
+                                            <div class="value" id="heatstrokeRisk">--</div>
+                                            <div class="risk-indicator" id="heatstrokeIndicator"></div>
+                                            <button id="quickHeatstrokeBtn" class="btn btn-sm btn-outline-danger mt-2" style="display: none;">
+                                                <i class="fas fa-calculator"></i> Calculate
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            
                             <div class="row mt-3">
                                 <div class="col-md-6">
                                     <h6>Time Domain Signal</h6>
@@ -262,66 +162,6 @@
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Charts -->
-        <div class="row">
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header">
-                        <h5><i class="fas fa-chart-line"></i> Temperature & Humidity</h5>
-                    </div>
-                    <div class="card-body">
-                        <canvas id="tempHumidityChart"></canvas>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header">
-                        <h5><i class="fas fa-chart-bar"></i> Light & Pressure</h5>
-                    </div>
-                    <div class="card-body">
-                        <canvas id="lightPressureChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Data Log -->
-        <div class="row mt-4">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header">
-                        <h5><i class="fas fa-list"></i> Recent Data Log</h5>
-                        <button id="clear-log" class="btn btn-sm btn-outline-secondary">Clear Log</button>
-                    </div>
-                    <div class="card-body">
-                        <div id="data-log" class="data-log"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Emergency Services Section -->
-        <div class="section">
-            <h2>Emergency Services</h2>
-            <div class="cards-container">
-                <div class="card hospital-info">
-                    <h3>🏥 Nearest Hospital</h3>
-                    <div class="location-input">
-                        <input type="text" id="locationInput" placeholder="Enter your address or location..." />
-                        <button onclick="findNearestHospital()">Find Hospital</button>
-                    </div>
-                    <div id="hospitalInfo">
-                        <p>Enter your location above to find the nearest hospital</p>
-                    </div>
-                </div>
-                <div class="card map-container">
-                    <h3>📍 Hospital Location</h3>
-                    <div id="hospitalMap" style="height: 300px; width: 100%;"></div>
                 </div>
             </div>
         </div>

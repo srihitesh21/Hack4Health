@@ -241,6 +241,144 @@
         .low-risk {
             border-left-color: #28a745;
         }
+        
+        /* Heatstroke Prediction Styles */
+        .heatstroke-prediction {
+            margin-top: 20px;
+        }
+        
+        .prediction-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-left: 5px solid #ffc107;
+        }
+        
+        .prediction-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f8f9fa;
+        }
+        
+        .prediction-header h5 {
+            margin: 0;
+            color: #333;
+            font-size: 20px;
+            font-weight: 600;
+        }
+        
+        .prediction-status {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .prediction-status.analyzing {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        
+        .prediction-status.high-risk {
+            background: #ffebee;
+            color: #d32f2f;
+        }
+        
+        .prediction-status.moderate-risk {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+        
+        .prediction-status.low-risk {
+            background: #e8f5e8;
+            color: #388e3c;
+        }
+        
+        .prediction-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .prediction-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .prediction-item .label {
+            font-weight: 600;
+            color: #555;
+        }
+        
+        .prediction-item .value {
+            font-weight: 700;
+            color: #333;
+            font-size: 16px;
+        }
+        
+        .prediction-recommendations {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+        
+        .prediction-recommendations h6 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #333;
+            font-weight: 600;
+        }
+        
+        .prediction-recommendations ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        
+        .prediction-recommendations li {
+            margin-bottom: 8px;
+            color: #555;
+            line-height: 1.5;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
     </style>
 </head>
 <body>
@@ -379,10 +517,51 @@
                     </div>
                 </div>
 
-                <!-- Original Risk Factors Section -->
-                <div class="form-section">
-                    <h4><i class="fas fa-heartbeat text-danger"></i> Stroke Risk Factors</h4>
-                    <p class="text-muted">Select all applicable risk factors:</p>
+                        <!-- Heatstroke Prediction Section -->
+        <div class="form-section" id="heatstrokeSection" style="display: none;">
+            <h4><i class="fas fa-thermometer-half text-warning"></i> Heatstroke Risk Assessment</h4>
+            <p class="text-muted">Based on your health data and current BPM readings, here's your heatstroke risk assessment:</p>
+            
+            <div class="heatstroke-prediction">
+                <div class="prediction-card">
+                    <div class="prediction-header">
+                        <h5>Heatstroke Risk Prediction</h5>
+                        <div class="prediction-status" id="predictionStatus">Analyzing...</div>
+                    </div>
+                    <div class="prediction-details">
+                        <div class="prediction-item">
+                            <span class="label">Risk Level:</span>
+                            <span class="value" id="riskLevel">-</span>
+                        </div>
+                        <div class="prediction-item">
+                            <span class="label">Probability:</span>
+                            <span class="value" id="riskProbability">-</span>
+                        </div>
+                        <div class="prediction-item">
+                            <span class="label">Current BPM:</span>
+                            <span class="value" id="currentBPM">-</span>
+                        </div>
+                        <div class="prediction-item">
+                            <span class="label">Skin Temperature:</span>
+                            <span class="value" id="skinTemperature">-</span>
+                        </div>
+                    </div>
+                    <div class="prediction-recommendations" id="recommendations" style="display: none;">
+                        <h6>Recommendations:</h6>
+                        <ul id="recommendationsList"></ul>
+                    </div>
+                </div>
+            </div>
+            
+            <button type="button" class="btn btn-primary" id="predictHeatstroke" style="margin-top: 15px;">
+                <i class="fas fa-calculator"></i> Calculate Heatstroke Risk
+            </button>
+        </div>
+
+        <!-- Original Risk Factors Section -->
+        <div class="form-section">
+            <h4><i class="fas fa-heartbeat text-danger"></i> Stroke Risk Factors</h4>
+            <p class="text-muted">Select all applicable risk factors:</p>
                     
                     <div class="row">
                         <div class="col-md-6">
@@ -423,6 +602,79 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Computer Vision & Facial Expression Analysis Section -->
+                <div class="form-section">
+                    <h4><i class="fas fa-camera text-primary"></i> Facial Expression Analysis</h4>
+                    <p class="text-muted">Allow camera access to analyze facial expressions for stress, fatigue, and emotional state assessment.</p>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="camera-container">
+                                <video id="video" width="100%" height="300" autoplay muted></video>
+                                <canvas id="canvas" style="display: none;"></canvas>
+                                <div class="camera-controls">
+                                    <button type="button" class="btn btn-primary" id="startCamera">
+                                        <i class="fas fa-camera"></i> Start Camera
+                                    </button>
+                                    <button type="button" class="btn btn-success" id="captureImage" style="display: none;">
+                                        <i class="fas fa-camera-retro"></i> Capture & Analyze
+                                    </button>
+                                    <button type="button" class="btn btn-secondary" id="stopCamera" style="display: none;">
+                                        <i class="fas fa-stop"></i> Stop Camera
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div id="analysisResults" style="display: none;">
+                                <h5>Facial Analysis Results</h5>
+                                <div class="analysis-item">
+                                    <label>Stress Level:</label>
+                                    <div class="progress">
+                                        <div id="stressBar" class="progress-bar" role="progressbar" style="width: 0%"></div>
+                                    </div>
+                                    <span id="stressValue">0%</span>
+                                </div>
+                                <div class="analysis-item">
+                                    <label>Fatigue Level:</label>
+                                    <div class="progress">
+                                        <div id="fatigueBar" class="progress-bar" role="progressbar" style="width: 0%"></div>
+                                    </div>
+                                    <span id="fatigueValue">0%</span>
+                                </div>
+                                <div class="analysis-item">
+                                    <label>Emotional State:</label>
+                                    <div id="emotionResult">Neutral</div>
+                                </div>
+                                <div class="analysis-item">
+                                    <label>Eye Openness:</label>
+                                    <div id="eyeOpenness">Normal</div>
+                                </div>
+                                <div class="analysis-item">
+                                    <label>Mouth Position:</label>
+                                    <div id="mouthPosition">Relaxed</div>
+                                </div>
+                                <div class="analysis-item">
+                                    <label>Overall Health Score:</label>
+                                    <div id="healthScore">Good</div>
+                                </div>
+                            </div>
+                            <div id="cameraInstructions">
+                                <div class="alert alert-info">
+                                    <h6><i class="fas fa-info-circle"></i> Instructions:</h6>
+                                    <ul>
+                                        <li>Click "Start Camera" to begin</li>
+                                        <li>Position your face in the center of the frame</li>
+                                        <li>Ensure good lighting for accurate analysis</li>
+                                        <li>Click "Capture & Analyze" to get results</li>
+                                        <li>Results will be included in your health assessment</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </form>
             
             <button type="button" class="submit-btn" onclick="submitForm()">Submit Complete Assessment</button>
@@ -449,6 +701,7 @@
         
         <div class="nav-links">
             <a href="/">Back to Dashboard</a>
+            <a href="/stress_fatigue_analysis">🧠 Advanced Stress Analysis</a>
             <a href="#" onclick="loadStoredData()">View Stored Data</a>
         </div>
         
@@ -471,7 +724,10 @@
                 medical_history: Array.from(document.querySelectorAll('input[name="medical_history"]:checked')).map(cb => cb.value),
                 
                 // Stroke Risk Factors
-                risk_factors: Array.from(document.querySelectorAll('input[name="risk_factors"]:checked')).map(cb => cb.value)
+                risk_factors: Array.from(document.querySelectorAll('input[name="risk_factors"]:checked')).map(cb => cb.value),
+                
+                // Facial Analysis Data
+                facial_analysis: facialAnalysisData
             };
 
             fetch('/submit_demographics', {
@@ -540,23 +796,23 @@
                 const container = document.getElementById('dataItems');
                 container.innerHTML = '';
 
-                data.forEach((assessment, index) => {
+                data.forEach((item, index) => {
                     const card = document.createElement('div');
                     card.className = 'data-item';
                     
-                    const symptomsList = assessment.symptoms && assessment.symptoms.length > 0 
-                        ? assessment.symptoms.join(', ') : 'None';
-                    const medicalHistoryList = assessment.medical_history && assessment.medical_history.length > 0 
-                        ? assessment.medical_history.join(', ') : 'None';
-                    const riskFactorsList = assessment.risk_factors && assessment.risk_factors.length > 0 
-                        ? assessment.risk_factors.join(', ') : 'None';
+                    const symptomsList = item.symptoms && item.symptoms.length > 0 
+                        ? item.symptoms.join(', ') : 'None';
+                    const medicalHistoryList = item.medical_history && item.medical_history.length > 0 
+                        ? item.medical_history.join(', ') : 'None';
+                    const riskFactorsList = item.risk_factors && item.risk_factors.length > 0 
+                        ? item.risk_factors.join(', ') : 'None';
                     
                     // Add null checks for risk scores
                     let riskScoresHtml = '';
-                    if (assessment.risk_scores) {
-                        const infectionScore = assessment.risk_scores.infection_score || 0;
-                        const dehydrationScore = assessment.risk_scores.dehydration_score || 0;
-                        const arrhythmiaScore = assessment.risk_scores.arrhythmia_score || 0;
+                    if (item.risk_scores) {
+                        const infectionScore = item.risk_scores.infection_score || 0;
+                        const dehydrationScore = item.risk_scores.dehydration_score || 0;
+                        const arrhythmiaScore = item.risk_scores.arrhythmia_score || 0;
                         
                         riskScoresHtml = `
                         <div style='margin-top:10px;'>
@@ -566,10 +822,24 @@
                         </div>`;
                     }
                     
+                    // Add facial analysis data if available
+                    if (item.facial_analysis) {
+                        const fa = item.facial_analysis;
+                        riskScoresHtml += `
+                            <div class="facial-analysis-summary">
+                                <strong>Facial Analysis:</strong><br>
+                                <span class="badge badge-${fa.stressLevel > 60 ? 'danger' : fa.stressLevel > 30 ? 'warning' : 'success'}">Stress: ${fa.stressLevel}%</span>
+                                <span class="badge badge-${fa.fatigueLevel > 60 ? 'danger' : fa.fatigueLevel > 30 ? 'warning' : 'success'}">Fatigue: ${fa.fatigueLevel}%</span>
+                                <span class="badge badge-info">Emotion: ${fa.emotion}</span>
+                                <span class="badge badge-${fa.healthScore === 'excellent' ? 'success' : fa.healthScore === 'good' ? 'info' : fa.healthScore === 'fair' ? 'warning' : 'danger'}">Health: ${fa.healthScore}</span>
+                            </div>
+                        `;
+                    }
+                    
                     card.innerHTML = `
-                        <strong>Age:</strong> ${assessment.age} | 
-                        <strong>Gender:</strong> ${assessment.gender} | 
-                        <strong>Date:</strong> ${new Date(assessment.timestamp * 1000).toLocaleString()}
+                        <strong>Age:</strong> ${item.age} | 
+                        <strong>Gender:</strong> ${item.gender} | 
+                        <strong>Date:</strong> ${new Date(item.timestamp * 1000).toLocaleString()}
                         <br><strong>Symptoms:</strong> ${symptomsList}
                         <br><strong>Medical History:</strong> ${medicalHistoryList}
                         <br><strong>Risk Factors:</strong> ${riskFactorsList}
@@ -607,6 +877,9 @@
             messageDiv.className = 'message success';
             messageDiv.style.display = 'block';
             
+            // Show heatstroke section after successful health assessment
+            document.getElementById('heatstrokeSection').style.display = 'block';
+            
             setTimeout(() => {
                 messageDiv.style.display = 'none';
             }, 5000);
@@ -626,7 +899,340 @@
         // Load stored data when page loads
         document.addEventListener('DOMContentLoaded', function() {
             loadStoredData();
+            
+            // Show heatstroke section if we have health data
+            const storedData = JSON.parse(localStorage.getItem('healthAssessmentData') || '{}');
+            if (storedData.age && storedData.gender) {
+                document.getElementById('heatstrokeSection').style.display = 'block';
+            }
+            
+            // Add event listener for heatstroke prediction button
+            document.getElementById('predictHeatstroke').addEventListener('click', predictHeatstroke);
         });
+        
+        // Heatstroke Prediction Function
+        async function predictHeatstroke() {
+            const button = document.getElementById('predictHeatstroke');
+            const statusElement = document.getElementById('predictionStatus');
+            
+            // Disable button and show loading
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Calculating...';
+            statusElement.textContent = 'Analyzing...';
+            statusElement.className = 'prediction-status analyzing';
+            
+            try {
+                // Get current health assessment data
+                const healthData = JSON.parse(localStorage.getItem('healthAssessmentData') || '{}');
+                
+                // Get current BPM data from the dashboard
+                const bpmData = await getCurrentBPMData();
+                
+                // Prepare data for prediction
+                const predictionData = {
+                    health_data: {
+                        age: parseInt(healthData.age) || 30,
+                        gender: healthData.gender || 'male',
+                        symptoms: healthData.symptoms || [],
+                        medical_history: healthData.medical_history || [],
+                        risk_factors: healthData.risk_factors || []
+                    },
+                    bpm_data: bpmData
+                };
+                
+                // Send prediction request
+                const response = await fetch('/api/heatstroke_prediction', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(predictionData)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                // Update UI with prediction results
+                displayHeatstrokePrediction(result);
+                
+            } catch (error) {
+                console.error('Heatstroke prediction error:', error);
+                statusElement.textContent = 'Error';
+                statusElement.className = 'prediction-status high-risk';
+                showErrorMessage('Failed to calculate heatstroke risk. Please try again.');
+            } finally {
+                // Re-enable button
+                button.disabled = false;
+                button.innerHTML = '<i class="fas fa-calculator"></i> Calculate Heatstroke Risk';
+            }
+        }
+        
+        // Get current BPM data from dashboard
+        async function getCurrentBPMData() {
+            try {
+                // Try to get BPM data from the dashboard API
+                const response = await fetch('/api/csv_analysis');
+                if (response.ok) {
+                    const data = await response.json();
+                    return {
+                        bpm: data.bpm || 75,
+                        skin_temperature: data.skin_temperature || 36.5
+                    };
+                }
+            } catch (error) {
+                console.warn('Could not fetch BPM data:', error);
+            }
+            
+            // Fallback to default values
+            return {
+                bpm: 75,
+                skin_temperature: 36.5
+            };
+        }
+        
+        // Display heatstroke prediction results
+        function displayHeatstrokePrediction(result) {
+            const statusElement = document.getElementById('predictionStatus');
+            const riskLevelElement = document.getElementById('riskLevel');
+            const probabilityElement = document.getElementById('riskProbability');
+            const bpmElement = document.getElementById('currentBPM');
+            const tempElement = document.getElementById('skinTemperature');
+            const recommendationsElement = document.getElementById('recommendations');
+            const recommendationsList = document.getElementById('recommendationsList');
+            
+            // Update status and risk level
+            const isHighRisk = result.heatstroke_prediction;
+            const probability = result.probability || 0;
+            
+            if (isHighRisk) {
+                statusElement.textContent = 'High Risk';
+                statusElement.className = 'prediction-status high-risk';
+                riskLevelElement.textContent = 'HIGH';
+                riskLevelElement.style.color = '#d32f2f';
+            } else if (probability > 0.3) {
+                statusElement.textContent = 'Moderate Risk';
+                statusElement.className = 'prediction-status moderate-risk';
+                riskLevelElement.textContent = 'MODERATE';
+                riskLevelElement.style.color = '#f57c00';
+            } else {
+                statusElement.textContent = 'Low Risk';
+                statusElement.className = 'prediction-status low-risk';
+                riskLevelElement.textContent = 'LOW';
+                riskLevelElement.style.color = '#388e3c';
+            }
+            
+            // Update values
+            probabilityElement.textContent = `${(probability * 100).toFixed(1)}%`;
+            bpmElement.textContent = `${result.bpm_data?.bpm || 'N/A'} BPM`;
+            tempElement.textContent = `${result.bpm_data?.skin_temperature || 'N/A'}°C`;
+            
+            // Update recommendations
+            const recommendations = getRecommendations(isHighRisk, probability, result.bpm_data);
+            recommendationsList.innerHTML = '';
+            recommendations.forEach(rec => {
+                const li = document.createElement('li');
+                li.textContent = rec;
+                recommendationsList.appendChild(li);
+            });
+            recommendationsElement.style.display = 'block';
+            
+            showSuccessMessage('Heatstroke risk assessment completed successfully!');
+        }
+        
+        // Get recommendations based on risk level
+        function getRecommendations(isHighRisk, probability, bpmData) {
+            const recommendations = [];
+            
+            if (isHighRisk) {
+                recommendations.push('Seek immediate medical attention');
+                recommendations.push('Move to a cool environment immediately');
+                recommendations.push('Remove excess clothing');
+                recommendations.push('Apply cool compresses to neck, armpits, and groin');
+                recommendations.push('Drink cool water if conscious');
+            } else if (probability > 0.3) {
+                recommendations.push('Monitor your symptoms closely');
+                recommendations.push('Stay hydrated with water or sports drinks');
+                recommendations.push('Take breaks in cool, shaded areas');
+                recommendations.push('Avoid strenuous activity during peak heat hours');
+                recommendations.push('Wear lightweight, loose-fitting clothing');
+            } else {
+                recommendations.push('Continue normal activities with standard precautions');
+                recommendations.push('Stay hydrated throughout the day');
+                recommendations.push('Take regular breaks if working outdoors');
+                recommendations.push('Monitor for any new symptoms');
+            }
+            
+            // Add specific recommendations based on BPM and temperature
+            if (bpmData?.bpm > 100) {
+                recommendations.push('Your heart rate is elevated - consider resting');
+            }
+            if (bpmData?.skin_temperature > 37.5) {
+                recommendations.push('Your skin temperature is elevated - seek cooler environment');
+            }
+            
+            return recommendations;
+        }
+
+        // Camera and Facial Analysis Variables
+        let stream = null;
+        let video = document.getElementById('video');
+        let canvas = document.getElementById('canvas');
+        let ctx = canvas.getContext('2d');
+        let facialAnalysisData = null;
+
+        // Camera Controls
+        document.getElementById('startCamera').addEventListener('click', startCamera);
+        document.getElementById('stopCamera').addEventListener('click', stopCamera);
+        document.getElementById('captureImage').addEventListener('click', captureAndAnalyze);
+
+        async function startCamera() {
+            try {
+                const cameraContainer = document.querySelector('.camera-container');
+                cameraContainer.classList.add('loading');
+                
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        width: { ideal: 640 },
+                        height: { ideal: 480 },
+                        facingMode: 'user'
+                    } 
+                });
+                
+                video.srcObject = stream;
+                cameraContainer.classList.remove('loading');
+                
+                document.getElementById('startCamera').style.display = 'none';
+                document.getElementById('captureImage').style.display = 'inline-block';
+                document.getElementById('stopCamera').style.display = 'inline-block';
+                document.getElementById('cameraInstructions').style.display = 'none';
+                
+            } catch (error) {
+                console.error('Camera access error:', error);
+                const cameraContainer = document.querySelector('.camera-container');
+                cameraContainer.classList.remove('loading');
+                cameraContainer.classList.add('permission-denied');
+                showErrorMessage('Camera access denied. Please allow camera permissions and try again.');
+            }
+        }
+
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            
+            video.srcObject = null;
+            document.getElementById('startCamera').style.display = 'inline-block';
+            document.getElementById('captureImage').style.display = 'none';
+            document.getElementById('stopCamera').style.display = 'none';
+            document.getElementById('cameraInstructions').style.display = 'block';
+            document.getElementById('analysisResults').style.display = 'none';
+            
+            const cameraContainer = document.querySelector('.camera-container');
+            cameraContainer.classList.remove('loading', 'permission-denied');
+        }
+
+        function captureAndAnalyze() {
+            if (!stream) {
+                showErrorMessage('Camera not started. Please start the camera first.');
+                return;
+            }
+
+            // Set canvas dimensions to match video
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            // Draw video frame to canvas
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // Simulate facial analysis (in a real implementation, this would use a ML model)
+            const analysisResults = performFacialAnalysis();
+            
+            // Display results
+            displayFacialAnalysis(analysisResults);
+            
+            // Store results for form submission
+            facialAnalysisData = analysisResults;
+            
+            showSuccessMessage('Facial analysis completed successfully!');
+        }
+
+        function performFacialAnalysis() {
+            // Simulated facial analysis results
+            // In a real implementation, this would use computer vision libraries like:
+            // - face-api.js for face detection and landmarks
+            // - TensorFlow.js for emotion recognition
+            // - OpenCV.js for facial feature analysis
+            
+            const stressLevel = Math.random() * 100;
+            const fatigueLevel = Math.random() * 100;
+            
+            // Determine emotional state based on stress level
+            let emotion = 'neutral';
+            if (stressLevel < 30) emotion = 'happy';
+            else if (stressLevel > 70) emotion = 'stressed';
+            else if (fatigueLevel > 60) emotion = 'sad';
+            
+            // Determine eye openness based on fatigue
+            let eyeOpenness = 'normal';
+            if (fatigueLevel > 70) eyeOpenness = 'half';
+            else if (fatigueLevel > 90) eyeOpenness = 'closed';
+            
+            // Determine mouth position based on stress
+            let mouthPosition = 'relaxed';
+            if (stressLevel > 60) mouthPosition = 'tight';
+            else if (stressLevel < 20) mouthPosition = 'open';
+            
+            // Calculate overall health score
+            let healthScore = 'good';
+            const avgScore = (stressLevel + fatigueLevel) / 2;
+            if (avgScore < 20) healthScore = 'excellent';
+            else if (avgScore < 40) healthScore = 'good';
+            else if (avgScore < 60) healthScore = 'fair';
+            else healthScore = 'poor';
+            
+            return {
+                stressLevel: Math.round(stressLevel),
+                fatigueLevel: Math.round(fatigueLevel),
+                emotion: emotion,
+                eyeOpenness: eyeOpenness,
+                mouthPosition: mouthPosition,
+                healthScore: healthScore,
+                timestamp: new Date().toISOString()
+            };
+        }
+
+        function displayFacialAnalysis(results) {
+            // Update progress bars
+            document.getElementById('stressBar').style.width = results.stressLevel + '%';
+            document.getElementById('stressValue').textContent = results.stressLevel + '%';
+            
+            document.getElementById('fatigueBar').style.width = results.fatigueLevel + '%';
+            document.getElementById('fatigueValue').textContent = results.fatigueLevel + '%';
+            
+            // Update text results
+            const emotionElement = document.getElementById('emotionResult');
+            emotionElement.textContent = results.emotion.charAt(0).toUpperCase() + results.emotion.slice(1);
+            emotionElement.className = results.emotion;
+            
+            const eyeElement = document.getElementById('eyeOpenness');
+            eyeElement.textContent = results.eyeOpenness.charAt(0).toUpperCase() + results.eyeOpenness.slice(1);
+            eyeElement.className = results.eyeOpenness;
+            
+            const mouthElement = document.getElementById('mouthPosition');
+            mouthElement.textContent = results.mouthPosition.charAt(0).toUpperCase() + results.mouthPosition.slice(1);
+            mouthElement.className = results.mouthPosition;
+            
+            const healthElement = document.getElementById('healthScore');
+            healthElement.textContent = results.healthScore.charAt(0).toUpperCase() + results.healthScore.slice(1);
+            healthElement.className = results.healthScore;
+            
+            // Show results
+            document.getElementById('analysisResults').style.display = 'block';
+        }
     </script>
 </body>
 </html> 

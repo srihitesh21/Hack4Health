@@ -15,6 +15,28 @@ import io
 import base64
 import os
 from datetime import datetime
+import pickle
+import joblib
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingRegressor
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
+import warnings
+warnings.filterwarnings('ignore')
+
+# Import MediaPipe model
+try:
+    from mediapipe_stress_fatigue import mediapipe_model
+    MEDIAPIPE_AVAILABLE = True
+    print("✅ MediaPipe model imported successfully")
+except ImportError as e:
+    print(f"⚠️ Full MediaPipe model not available: {e}")
+    try:
+        from simple_mediapipe_stress_fatigue import simple_mediapipe_model as mediapipe_model
+        MEDIAPIPE_AVAILABLE = True
+        print("✅ Simplified MediaPipe model imported successfully")
+    except ImportError as e2:
+        print(f"⚠️ Simplified MediaPipe model not available: {e2}")
+        MEDIAPIPE_AVAILABLE = False
+        mediapipe_model = None
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'arduino_dashboard_secret'
@@ -50,6 +72,24 @@ latest_analysis = {
 # Store combined health assessment data (demographics + health questionnaire)
 demographics_data = []
 
+# Load existing health assessment data from file
+def load_health_assessment_data():
+    """Load health assessment data from file if it exists"""
+    global demographics_data
+    try:
+        if os.path.exists('health_assessment_data.json'):
+            with open('health_assessment_data.json', 'r') as f:
+                demographics_data = json.load(f)
+            print(f"✅ Loaded {len(demographics_data)} health assessments from file")
+        else:
+            print("📝 No existing health assessment data file found")
+    except Exception as e:
+        print(f"⚠️  Warning: Could not load health assessment data: {e}")
+        demographics_data = []
+
+# Load data on startup
+load_health_assessment_data()
+
 # Demo mode settings
 DEMO_MODE = False  # Set to False to disable demo data
 demo_data_counter = 0
@@ -59,6 +99,363 @@ arduino_connected = False
 arduino_port = None
 demo_mode = True
 csv_analysis_results = None
+
+class PretrainedStressFatigueModel:
+    """
+    Pretrained model for stress and fatigue detection using ensemble learning
+    Combines multiple ML models for robust predictions
+    """
+    
+    def __init__(self):
+        self.stress_model = None
+        self.fatigue_model = None
+        self.feature_scaler = None
+        self.is_loaded = False
+        self.model_path = os.path.join(os.path.dirname(__file__), 'pretrained_models')
+        
+        # Create model directory if it doesn't exist
+        os.makedirs(self.model_path, exist_ok=True)
+        
+        # Initialize or load models
+        self._initialize_models()
+    
+    def _initialize_models(self):
+        """Initialize or load pretrained models"""
+        try:
+            # Try to load existing models
+            if self._load_models():
+                print("✅ Loaded pretrained stress/fatigue models")
+                self.is_loaded = True
+            else:
+                # Train new models if none exist
+                print("🔄 Training new stress/fatigue models...")
+                self._train_models()
+                self.is_loaded = True
+        except Exception as e:
+            print(f"⚠️ Model initialization failed: {e}")
+            self.is_loaded = False
+    
+    def _load_models(self):
+        """Load pretrained models from disk"""
+        try:
+            model_files = [
+                'stress_model.pkl',
+                'fatigue_model.pkl', 
+                'feature_scaler.pkl'
+            ]
+            
+            # Check if all model files exist
+            for file in model_files:
+                if not os.path.exists(os.path.join(self.model_path, file)):
+                    return False
+            
+            # Load models
+            with open(os.path.join(self.model_path, 'stress_model.pkl'), 'rb') as f:
+                self.stress_model = pickle.load(f)
+            
+            with open(os.path.join(self.model_path, 'fatigue_model.pkl'), 'rb') as f:
+                self.fatigue_model = pickle.load(f)
+            
+            with open(os.path.join(self.model_path, 'feature_scaler.pkl'), 'rb') as f:
+                self.feature_scaler = pickle.load(f)
+            
+            return True
+            
+        except Exception as e:
+            print(f"Error loading models: {e}")
+            return False
+    
+    def _save_models(self):
+        """Save trained models to disk"""
+        try:
+            with open(os.path.join(self.model_path, 'stress_model.pkl'), 'wb') as f:
+                pickle.dump(self.stress_model, f)
+            
+            with open(os.path.join(self.model_path, 'fatigue_model.pkl'), 'wb') as f:
+                pickle.dump(self.fatigue_model, f)
+            
+            with open(os.path.join(self.model_path, 'feature_scaler.pkl'), 'wb') as f:
+                pickle.dump(self.feature_scaler, f)
+            
+            print("✅ Models saved successfully")
+            
+        except Exception as e:
+            print(f"Error saving models: {e}")
+    
+    def _generate_training_data(self, num_samples=1000):
+        """Generate synthetic training data based on medical research"""
+        np.random.seed(42)  # For reproducibility
+        
+        data = []
+        labels_stress = []
+        labels_fatigue = []
+        
+        for i in range(num_samples):
+            # Generate realistic feature combinations
+            sample = self._generate_realistic_sample()
+            data.append(sample)
+            
+            # Generate labels based on feature patterns
+            stress_label = self._calculate_stress_label(sample)
+            fatigue_label = self._calculate_fatigue_label(sample)
+            
+            labels_stress.append(stress_label)
+            labels_fatigue.append(fatigue_label)
+        
+        return np.array(data), np.array(labels_stress), np.array(labels_fatigue)
+    
+    def _generate_realistic_sample(self):
+        """Generate a realistic feature sample"""
+        # Facial features (0-1 scale)
+        eye_openness = np.random.normal(0.6, 0.2)
+        eye_openness = np.clip(eye_openness, 0.1, 1.0)
+        
+        mouth_tension = np.random.normal(0.4, 0.2)
+        mouth_tension = np.clip(mouth_tension, 0.0, 1.0)
+        
+        brow_furrow = np.random.normal(0.3, 0.2)
+        brow_furrow = np.clip(brow_furrow, 0.0, 1.0)
+        
+        jaw_clenching = np.random.normal(0.3, 0.2)
+        jaw_clenching = np.clip(jaw_clenching, 0.0, 1.0)
+        
+        blink_rate = np.random.normal(0.5, 0.2)
+        blink_rate = np.clip(blink_rate, 0.1, 1.0)
+        
+        pupil_dilation = np.random.normal(0.4, 0.2)
+        pupil_dilation = np.clip(pupil_dilation, 0.1, 1.0)
+        
+        # Physiological features
+        heart_rate = np.random.normal(75, 15)
+        heart_rate = np.clip(heart_rate, 50, 120)
+        
+        hrv = np.random.normal(40, 15)
+        hrv = np.clip(hrv, 10, 80)
+        
+        skin_temp = np.random.normal(36.5, 1.0)
+        skin_temp = np.clip(skin_temp, 34.0, 39.0)
+        
+        respiration_rate = np.random.normal(16, 4)
+        respiration_rate = np.clip(respiration_rate, 10, 30)
+        
+        # Lifestyle features
+        age = np.random.randint(18, 80)
+        sleep_hours = np.random.normal(7, 2)
+        sleep_hours = np.clip(sleep_hours, 4, 12)
+        
+        work_hours = np.random.normal(8, 3)
+        work_hours = np.clip(work_hours, 0, 16)
+        
+        exercise_freq = np.random.choice([0, 1, 2, 3], p=[0.3, 0.3, 0.2, 0.2])  # 0=none, 3=high
+        
+        return [
+            eye_openness, mouth_tension, brow_furrow, jaw_clenching,
+            blink_rate, pupil_dilation, heart_rate, hrv, skin_temp,
+            respiration_rate, age, sleep_hours, work_hours, exercise_freq
+        ]
+    
+    def _calculate_stress_label(self, features):
+        """Calculate stress label based on feature patterns"""
+        eye_openness, mouth_tension, brow_furrow, jaw_clenching, \
+        blink_rate, pupil_dilation, heart_rate, hrv, skin_temp, \
+        respiration_rate, age, sleep_hours, work_hours, exercise_freq = features
+        
+        stress_score = 0.0
+        
+        # Facial stress indicators
+        if brow_furrow > 0.6: stress_score += 0.2
+        if jaw_clenching > 0.6: stress_score += 0.15
+        if eye_openness < 0.4: stress_score += 0.1
+        if mouth_tension > 0.6: stress_score += 0.1
+        if pupil_dilation > 0.6: stress_score += 0.1
+        
+        # Physiological stress indicators
+        if heart_rate > 85: stress_score += 0.15
+        if hrv < 30: stress_score += 0.1
+        if respiration_rate > 20: stress_score += 0.1
+        
+        # Lifestyle stress indicators
+        if work_hours > 10: stress_score += 0.1
+        if sleep_hours < 6: stress_score += 0.1
+        if exercise_freq == 0: stress_score += 0.05
+        
+        return min(stress_score, 1.0)
+    
+    def _calculate_fatigue_label(self, features):
+        """Calculate fatigue label based on feature patterns"""
+        eye_openness, mouth_tension, brow_furrow, jaw_clenching, \
+        blink_rate, pupil_dilation, heart_rate, hrv, skin_temp, \
+        respiration_rate, age, sleep_hours, work_hours, exercise_freq = features
+        
+        fatigue_score = 0.0
+        
+        # Facial fatigue indicators
+        if eye_openness < 0.4: fatigue_score += 0.25
+        if blink_rate < 0.3: fatigue_score += 0.15
+        if pupil_dilation < 0.3: fatigue_score += 0.1
+        
+        # Physiological fatigue indicators
+        if heart_rate > 80: fatigue_score += 0.1
+        if hrv < 25: fatigue_score += 0.15
+        if skin_temp < 35.5: fatigue_score += 0.1
+        
+        # Lifestyle fatigue indicators
+        if sleep_hours < 6: fatigue_score += 0.2
+        if work_hours > 10: fatigue_score += 0.1
+        if exercise_freq == 0: fatigue_score += 0.05
+        
+        return min(fatigue_score, 1.0)
+    
+    def _train_models(self):
+        """Train the stress and fatigue detection models"""
+        try:
+            # Generate training data
+            X, y_stress, y_fatigue = self._generate_training_data(2000)
+            
+            # Initialize feature preprocessing
+            self.feature_scaler = StandardScaler()
+            
+            # Scale features
+            X_scaled = self.feature_scaler.fit_transform(X)
+            
+            # Train stress model (Random Forest for classification)
+            self.stress_model = RandomForestClassifier(
+                n_estimators=100,
+                max_depth=10,
+                random_state=42,
+                n_jobs=-1
+            )
+            self.stress_model.fit(X_scaled, (y_stress > 0.5).astype(int))
+            
+            # Train fatigue model (Gradient Boosting for regression)
+            self.fatigue_model = GradientBoostingRegressor(
+                n_estimators=100,
+                max_depth=6,
+                random_state=42,
+                learning_rate=0.1
+            )
+            self.fatigue_model.fit(X_scaled, y_fatigue)
+            
+            # Save models
+            self._save_models()
+            
+            print("✅ Models trained and saved successfully")
+            
+        except Exception as e:
+            print(f"Error training models: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    def extract_features(self, facial_data, physiological_data, demographic_data):
+        """Extract and normalize features from input data"""
+        try:
+            features = []
+            
+            # Facial features (normalize to 0-1)
+            features.extend([
+                facial_data.get('eye_openness', 0.5),
+                facial_data.get('mouth_tension', 0.5),
+                facial_data.get('brow_furrow', 0.5),
+                facial_data.get('jaw_clenching', 0.5),
+                facial_data.get('blink_rate', 0.5),
+                facial_data.get('pupil_dilation', 0.5)
+            ])
+            
+            # Physiological features (normalize)
+            heart_rate = physiological_data.get('heart_rate', 70)
+            hrv = physiological_data.get('hrv', 50)
+            skin_temp = physiological_data.get('skin_temperature', 36.5)
+            respiration_rate = physiological_data.get('respiration_rate', 16)
+            
+            # Normalize physiological values
+            heart_rate_norm = (heart_rate - 50) / (120 - 50)  # 50-120 range
+            hrv_norm = (hrv - 10) / (80 - 10)  # 10-80 range
+            skin_temp_norm = (skin_temp - 34) / (39 - 34)  # 34-39 range
+            resp_norm = (respiration_rate - 10) / (30 - 10)  # 10-30 range
+            
+            features.extend([heart_rate_norm, hrv_norm, skin_temp_norm, resp_norm])
+            
+            # Demographic features
+            age = demographic_data.get('age', 30)
+            sleep_hours = demographic_data.get('sleep_hours', 7)
+            work_hours = demographic_data.get('work_hours', 8)
+            exercise_freq = self._encode_exercise_frequency(
+                demographic_data.get('exercise_frequency', 'moderate')
+            )
+            
+            # Normalize demographic values
+            age_norm = (age - 18) / (80 - 18)  # 18-80 range
+            sleep_norm = (sleep_hours - 4) / (12 - 4)  # 4-12 range
+            work_norm = (work_hours - 0) / (16 - 0)  # 0-16 range
+            
+            features.extend([age_norm, sleep_norm, work_norm, exercise_freq])
+            
+            return np.array(features)
+            
+        except Exception as e:
+            print(f"Error extracting features: {e}")
+            return np.zeros(14)  # Return zero features if error
+    
+    def _encode_exercise_frequency(self, exercise_freq):
+        """Encode exercise frequency to numeric value"""
+        mapping = {
+            'none': 0.0,
+            'low': 0.33,
+            'moderate': 0.67,
+            'high': 1.0
+        }
+        return mapping.get(exercise_freq.lower(), 0.5)
+    
+    def predict_stress_fatigue(self, facial_data, physiological_data, demographic_data):
+        """Predict stress and fatigue using pretrained models"""
+        if not self.is_loaded:
+            return {
+                'stress_score': 0.0,
+                'fatigue_score': 0.0,
+                'confidence': 0.0,
+                'model_available': False
+            }
+        
+        try:
+            # Extract features
+            features = self.extract_features(facial_data, physiological_data, demographic_data)
+            
+            # Scale features
+            features_scaled = self.feature_scaler.transform(features.reshape(1, -1))
+            
+            # Make predictions
+            stress_prob = self.stress_model.predict_proba(features_scaled)[0]
+            stress_score = stress_prob[1] if len(stress_prob) > 1 else stress_prob[0]  # Probability of high stress
+            
+            fatigue_score = self.fatigue_model.predict(features_scaled)[0]
+            fatigue_score = np.clip(fatigue_score, 0.0, 1.0)
+            
+            # Calculate confidence based on model certainty
+            stress_confidence = max(stress_prob) if len(stress_prob) > 1 else 0.8
+            fatigue_confidence = 0.8  # Default confidence for regression
+            
+            overall_confidence = (stress_confidence + fatigue_confidence) / 2
+            
+            return {
+                'stress_score': round(float(stress_score), 3),
+                'fatigue_score': round(float(fatigue_score), 3),
+                'confidence': round(float(overall_confidence), 3),
+                'model_available': True,
+                'model_version': '1.0'
+            }
+            
+        except Exception as e:
+            print(f"Error in model prediction: {e}")
+            return {
+                'stress_score': 0.0,
+                'fatigue_score': 0.0,
+                'confidence': 0.0,
+                'model_available': False,
+                'error': str(e)
+            }
+
+# Initialize the pretrained model
+pretrained_model = PretrainedStressFatigueModel()
 
 def compute_pvr_score_components(pulse_rates, skin_temps=None):
     """
@@ -627,7 +1024,9 @@ def submit_demographics():
                 'symptoms': data.get('symptoms', []),
                 'medical_history': data.get('medical_history', []),
                 'risk_factors': data.get('risk_factors', []),
-                'timestamp': time.time()
+                'facial_analysis': data.get('facial_analysis'),
+                'timestamp': time.time(),
+                'date': datetime.now().strftime('%d/%m/%Y, %H:%M:%S')
             }
             
             # Add the latest risk scores from CSV analysis
@@ -644,6 +1043,14 @@ def submit_demographics():
             if len(demographics_data) > 10:
                 demographics_data.pop(0)
             
+            # Save to file for persistence
+            try:
+                with open('health_assessment_data.json', 'w') as f:
+                    json.dump(demographics_data, f, indent=2)
+                print(f"✅ Health assessment data saved to file: {len(demographics_data)} assessments")
+            except Exception as save_error:
+                print(f"⚠️  Warning: Could not save to file: {save_error}")
+            
             return jsonify({
                 'success': True,
                 'message': 'Assessment submitted successfully',
@@ -654,7 +1061,1188 @@ def submit_demographics():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
+@app.route('/stress_fatigue_analysis', methods=['GET', 'POST'])
+def stress_fatigue_analysis():
+    """Advanced stress and fatigue analysis using pre-trained models"""
+    if request.method == 'POST':
+        data = request.get_json()
+        
+        # Extract data from request
+        facial_data = data.get('facial_data', {})
+        physiological_data = data.get('physiological_data', {})
+        demographic_data = data.get('demographic_data', {})
+        
+        # Perform advanced analysis
+        analysis_results = perform_advanced_stress_analysis(
+            facial_data, physiological_data, demographic_data
+        )
+        
+        return jsonify(analysis_results)
+    
+    return render_template('stress_fatigue_analysis.html')
+
+def perform_advanced_stress_analysis(facial_data, physiological_data, demographic_data):
+    """
+    Advanced stress and fatigue analysis using multi-modal data fusion
+    with MediaPipe facial landmarks and machine learning
+    """
+    try:
+        # Try to use MediaPipe model first
+        if MEDIAPIPE_AVAILABLE and mediapipe_model and mediapipe_model.is_initialized:
+            print("🧠 Using MediaPipe model for stress/fatigue analysis")
+            ml_predictions = mediapipe_model.predict_stress_fatigue(
+                facial_data, physiological_data, demographic_data
+            )
+            
+            if ml_predictions.get('model_available', False):
+                # Use MediaPipe predictions directly
+                stress_score = ml_predictions['stress_score']
+                fatigue_score = ml_predictions['fatigue_score']
+                confidence = ml_predictions['confidence']
+                model_version = ml_predictions.get('model_version', 'MediaPipe v1.0')
+                
+                # Determine stress and fatigue levels
+                stress_level = "Low" if stress_score < 0.3 else "Moderate" if stress_score < 0.7 else "High"
+                fatigue_level = "Low" if fatigue_score < 0.3 else "Moderate" if fatigue_score < 0.7 else "High"
+                
+                # Generate recommendations
+                recommendations = generate_mediapipe_recommendations(stress_score, fatigue_score, demographic_data)
+                
+                return {
+                    'stress_score': stress_score,
+                    'fatigue_score': fatigue_score,
+                    'confidence': confidence,
+                    'stress_level': stress_level,
+                    'fatigue_level': fatigue_level,
+                    'model_version': model_version,
+                    'analysis_method': 'MediaPipe Facial Landmarks + Deep Learning',
+                    'recommendations': recommendations,
+                    'facial_features': ml_predictions.get('facial_features', []),
+                    'physiological_features': ml_predictions.get('physiological_features', []),
+                    'timestamp': datetime.now().isoformat()
+                }
+        
+        # Fallback to traditional analysis
+        print("🔄 Using traditional analysis as fallback")
+        
+        # Get predictions from pretrained model
+        ml_predictions = pretrained_model.predict_stress_fatigue(
+            facial_data, physiological_data, demographic_data
+        )
+        
+        # Traditional rule-based analysis
+        rule_based_stress = 0.0
+        rule_based_fatigue = 0.0
+        rule_based_confidence = 0.0
+        
+        # 1. Enhanced Facial Analysis (40% weight)
+        facial_stress = analyze_enhanced_facial_stress(facial_data)
+        facial_fatigue = analyze_enhanced_facial_fatigue(facial_data)
+        
+        # 2. Enhanced Physiological Analysis (35% weight)
+        physiological_stress = analyze_enhanced_physiological_stress(physiological_data)
+        physiological_fatigue = analyze_enhanced_physiological_fatigue(physiological_data)
+        
+        # 3. Enhanced Lifestyle Analysis (25% weight)
+        lifestyle_stress = analyze_enhanced_lifestyle_stress(demographic_data)
+        lifestyle_fatigue = analyze_enhanced_lifestyle_fatigue(demographic_data)
+        
+        # Combine rule-based scores
+        rule_based_stress = (
+            facial_stress * 0.4 +
+            physiological_stress * 0.35 +
+            lifestyle_stress * 0.25
+        )
+        
+        rule_based_fatigue = (
+            facial_fatigue * 0.4 +
+            physiological_fatigue * 0.35 +
+            lifestyle_fatigue * 0.25
+        )
+        
+        # Combine ML and rule-based predictions (70% ML, 30% rule-based)
+        final_stress = (
+            ml_predictions.get('stress_score', 0.0) * 0.7 +
+            rule_based_stress * 0.3
+        )
+        
+        final_fatigue = (
+            ml_predictions.get('fatigue_score', 0.0) * 0.7 +
+            rule_based_fatigue * 0.3
+        )
+        
+        # Calculate confidence
+        confidence = (
+            ml_predictions.get('confidence', 0.0) * 0.7 +
+            rule_based_confidence * 0.3
+        )
+        
+        # Determine levels
+        stress_level = "Low" if final_stress < 0.3 else "Moderate" if final_stress < 0.7 else "High"
+        fatigue_level = "Low" if final_fatigue < 0.3 else "Moderate" if final_fatigue < 0.7 else "High"
+        
+        # Generate recommendations
+        recommendations = generate_recommendations(final_stress, final_fatigue, demographic_data)
+        
+        return {
+            'stress_score': round(final_stress, 3),
+            'fatigue_score': round(final_fatigue, 3),
+            'confidence': round(confidence, 3),
+            'stress_level': stress_level,
+            'fatigue_level': fatigue_level,
+            'model_version': 'Ensemble v2.0',
+            'analysis_method': 'ML + Rule-based Analysis',
+            'recommendations': recommendations,
+            'ml_predictions': ml_predictions,
+            'rule_based_scores': {
+                'facial_stress': facial_stress,
+                'facial_fatigue': facial_fatigue,
+                'physiological_stress': physiological_stress,
+                'physiological_fatigue': physiological_fatigue,
+                'lifestyle_stress': lifestyle_stress,
+                'lifestyle_fatigue': lifestyle_fatigue
+            },
+            'timestamp': datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        print(f"Error in stress analysis: {e}")
+        import traceback
+        traceback.print_exc()
+        return {
+            'error': str(e),
+            'stress_score': 0.0,
+            'fatigue_score': 0.0,
+            'confidence': 0.0,
+            'stress_level': 'Unknown',
+            'fatigue_level': 'Unknown'
+        }
+
+def analyze_enhanced_facial_stress(facial_data):
+    """Enhanced facial stress analysis with machine learning features"""
+    stress_score = 0.0
+    
+    # Extract comprehensive facial features
+    eye_openness = facial_data.get('eye_openness', 0.5)
+    mouth_tension = facial_data.get('mouth_tension', 0.5)
+    brow_furrow = facial_data.get('brow_furrow', 0.5)
+    jaw_clenching = facial_data.get('jaw_clenching', 0.5)
+    blink_rate = facial_data.get('blink_rate', 0.5)
+    pupil_dilation = facial_data.get('pupil_dilation', 0.5)
+    facial_asymmetry = facial_data.get('facial_asymmetry', 0.5)
+    skin_tone_variation = facial_data.get('skin_tone_variation', 0.5)
+    
+    # Advanced stress indicators with weighted scoring
+    # 1. Corrugator activity (brow furrowing) - Strong stress indicator
+    if brow_furrow > 0.7:
+        stress_score += 0.25
+    elif brow_furrow > 0.5:
+        stress_score += 0.15
+    
+    # 2. Masseter activity (jaw clenching) - Chronic stress indicator
+    if jaw_clenching > 0.7:
+        stress_score += 0.20
+    elif jaw_clenching > 0.5:
+        stress_score += 0.10
+    
+    # 3. Orbicularis oculi activity (eye tension)
+    if eye_openness < 0.3:
+        stress_score += 0.15
+    elif eye_openness < 0.5:
+        stress_score += 0.08
+    
+    # 4. Orbicularis oris activity (mouth tension)
+    if mouth_tension > 0.6:
+        stress_score += 0.12
+    elif mouth_tension > 0.4:
+        stress_score += 0.06
+    
+    # 5. Pupil dilation (autonomic response)
+    if pupil_dilation > 0.7:
+        stress_score += 0.10
+    elif pupil_dilation > 0.5:
+        stress_score += 0.05
+    
+    # 6. Abnormal blink rate (cognitive load)
+    if blink_rate < 0.2 or blink_rate > 0.8:
+        stress_score += 0.08
+    
+    # 7. Facial asymmetry (muscle tension)
+    if facial_asymmetry > 0.6:
+        stress_score += 0.05
+    
+    # 8. Skin tone variation (vasoconstriction)
+    if skin_tone_variation > 0.6:
+        stress_score += 0.05
+    
+    return min(stress_score, 1.0)
+
+def analyze_enhanced_facial_fatigue(facial_data):
+    """Enhanced facial fatigue analysis with comprehensive features"""
+    fatigue_score = 0.0
+    
+    # Extract facial features
+    eye_openness = facial_data.get('eye_openness', 0.5)
+    eye_bags = facial_data.get('eye_bags', 0.5)
+    skin_tone = facial_data.get('skin_tone', 0.5)
+    facial_asymmetry = facial_data.get('facial_asymmetry', 0.5)
+    eye_redness = facial_data.get('eye_redness', 0.5)
+    facial_droop = facial_data.get('facial_droop', 0.5)
+    blink_frequency = facial_data.get('blink_frequency', 0.5)
+    
+    # Advanced fatigue indicators
+    # 1. Ptosis (droopy eyelids) - Primary fatigue indicator
+    if eye_openness < 0.3:
+        fatigue_score += 0.30
+    elif eye_openness < 0.5:
+        fatigue_score += 0.20
+    
+    # 2. Periorbital edema (eye bags) - Chronic fatigue
+    if eye_bags > 0.7:
+        fatigue_score += 0.25
+    elif eye_bags > 0.5:
+        fatigue_score += 0.15
+    
+    # 3. Conjunctival injection (eye redness) - Sleep deprivation
+    if eye_redness > 0.6:
+        fatigue_score += 0.15
+    elif eye_redness > 0.4:
+        fatigue_score += 0.08
+    
+    # 4. Facial asymmetry (muscle fatigue)
+    if facial_asymmetry > 0.6:
+        fatigue_score += 0.10
+    elif facial_asymmetry > 0.4:
+        fatigue_score += 0.05
+    
+    # 5. Dull skin tone (poor circulation)
+    if skin_tone < 0.3:
+        fatigue_score += 0.10
+    elif skin_tone < 0.5:
+        fatigue_score += 0.05
+    
+    # 6. Facial droop (muscle weakness)
+    if facial_droop > 0.6:
+        fatigue_score += 0.05
+    
+    # 7. Reduced blink frequency (cognitive fatigue)
+    if blink_frequency < 0.3:
+        fatigue_score += 0.05
+    
+    return min(fatigue_score, 1.0)
+
+def analyze_enhanced_physiological_stress(physiological_data):
+    """Enhanced physiological stress analysis with advanced metrics"""
+    stress_score = 0.0
+    
+    # Extract comprehensive physiological parameters
+    heart_rate = physiological_data.get('heart_rate', 70)
+    heart_rate_variability = physiological_data.get('hrv', 50)
+    skin_temperature = physiological_data.get('skin_temperature', 36.5)
+    respiration_rate = physiological_data.get('respiration_rate', 16)
+    blood_pressure_systolic = physiological_data.get('bp_systolic', 120)
+    blood_pressure_diastolic = physiological_data.get('bp_diastolic', 80)
+    skin_conductance = physiological_data.get('skin_conductance', 5.0)
+    temperature_variation = physiological_data.get('temp_variation', 0.5)
+    
+    # Advanced stress indicators with age-adjusted thresholds
+    # 1. Heart rate analysis (age-adjusted)
+    age = physiological_data.get('age', 30)
+    max_hr = 220 - age
+    resting_hr_threshold = max_hr * 0.4  # 40% of max HR
+    
+    if heart_rate > resting_hr_threshold + 20:
+        stress_score += 0.25
+    elif heart_rate > resting_hr_threshold + 10:
+        stress_score += 0.15
+    
+    # 2. Heart rate variability (RMSSD-based)
+    if heart_rate_variability < 20:
+        stress_score += 0.25
+    elif heart_rate_variability < 35:
+        stress_score += 0.15
+    elif heart_rate_variability < 50:
+        stress_score += 0.08
+    
+    # 3. Skin conductance (electrodermal activity)
+    if skin_conductance > 8.0:
+        stress_score += 0.15
+    elif skin_conductance > 6.0:
+        stress_score += 0.08
+    
+    # 4. Blood pressure elevation
+    if blood_pressure_systolic > 140 or blood_pressure_diastolic > 90:
+        stress_score += 0.15
+    elif blood_pressure_systolic > 130 or blood_pressure_diastolic > 85:
+        stress_score += 0.08
+    
+    # 5. Respiratory rate (hyperventilation)
+    if respiration_rate > 22:
+        stress_score += 0.12
+    elif respiration_rate > 18:
+        stress_score += 0.06
+    
+    # 6. Skin temperature elevation (stress response)
+    if skin_temperature > 37.8:
+        stress_score += 0.08
+    elif skin_temperature > 37.2:
+        stress_score += 0.04
+    
+    return min(stress_score, 1.0)
+
+def analyze_enhanced_physiological_fatigue(physiological_data):
+    """Enhanced physiological fatigue analysis with comprehensive metrics"""
+    fatigue_score = 0.0
+    
+    # Extract physiological parameters
+    heart_rate = physiological_data.get('heart_rate', 70)
+    heart_rate_variability = physiological_data.get('hrv', 50)
+    skin_temperature = physiological_data.get('skin_temperature', 36.5)
+    blood_pressure_systolic = physiological_data.get('bp_systolic', 120)
+    blood_pressure_diastolic = physiological_data.get('bp_diastolic', 80)
+    oxygen_saturation = physiological_data.get('oxygen_saturation', 98)
+    respiratory_rate = physiological_data.get('respiration_rate', 16)
+    
+    # Advanced fatigue indicators
+    # 1. Reduced heart rate variability (autonomic dysfunction)
+    if heart_rate_variability < 15:
+        fatigue_score += 0.30
+    elif heart_rate_variability < 25:
+        fatigue_score += 0.20
+    elif heart_rate_variability < 35:
+        fatigue_score += 0.10
+    
+    # 2. Compensatory tachycardia
+    if heart_rate > 85:
+        fatigue_score += 0.20
+    elif heart_rate > 75:
+        fatigue_score += 0.10
+    
+    # 3. Poor peripheral circulation (low skin temperature)
+    if skin_temperature < 35.0:
+        fatigue_score += 0.20
+    elif skin_temperature < 36.0:
+        fatigue_score += 0.10
+    
+    # 4. Blood pressure dysregulation
+    if blood_pressure_systolic > 150 or blood_pressure_systolic < 90:
+        fatigue_score += 0.15
+    elif blood_pressure_diastolic > 95 or blood_pressure_diastolic < 60:
+        fatigue_score += 0.10
+    
+    # 5. Reduced oxygen saturation
+    if oxygen_saturation < 95:
+        fatigue_score += 0.10
+    elif oxygen_saturation < 97:
+        fatigue_score += 0.05
+    
+    # 6. Irregular breathing pattern
+    if respiratory_rate < 12 or respiratory_rate > 20:
+        fatigue_score += 0.05
+    
+    return min(fatigue_score, 1.0)
+
+def analyze_enhanced_lifestyle_stress(demographic_data):
+    """Enhanced lifestyle stress analysis with comprehensive factors"""
+    stress_score = 0.0
+    
+    # Extract comprehensive lifestyle data
+    age = demographic_data.get('age', 30)
+    sleep_hours = demographic_data.get('sleep_hours', 7)
+    sleep_quality = demographic_data.get('sleep_quality', 'good')
+    exercise_frequency = demographic_data.get('exercise_frequency', 'moderate')
+    work_hours = demographic_data.get('work_hours', 8)
+    stress_level = demographic_data.get('stress_level', 'low')
+    caffeine_intake = demographic_data.get('caffeine_intake', 'moderate')
+    alcohol_consumption = demographic_data.get('alcohol_consumption', 'low')
+    smoking_status = demographic_data.get('smoking_status', 'none')
+    social_support = demographic_data.get('social_support', 'good')
+    financial_stress = demographic_data.get('financial_stress', 'low')
+    
+    # Advanced stress factors with weighted scoring
+    # 1. Sleep quality and quantity
+    if sleep_hours < 5:
+        stress_score += 0.25
+    elif sleep_hours < 6:
+        stress_score += 0.15
+    elif sleep_hours < 7:
+        stress_score += 0.08
+    
+    if sleep_quality == 'poor':
+        stress_score += 0.20
+    elif sleep_quality == 'fair':
+        stress_score += 0.10
+    
+    # 2. Self-reported stress level
+    if stress_level == 'very_high':
+        stress_score += 0.25
+    elif stress_level == 'high':
+        stress_score += 0.20
+    elif stress_level == 'moderate':
+        stress_score += 0.10
+    
+    # 3. Work-related stress
+    if work_hours > 12:
+        stress_score += 0.20
+    elif work_hours > 10:
+        stress_score += 0.15
+    elif work_hours > 8:
+        stress_score += 0.08
+    
+    # 4. Physical activity (inverse relationship)
+    if exercise_frequency == 'none':
+        stress_score += 0.15
+    elif exercise_frequency == 'low':
+        stress_score += 0.08
+    
+    # 5. Substance use
+    if caffeine_intake == 'very_high':
+        stress_score += 0.12
+    elif caffeine_intake == 'high':
+        stress_score += 0.08
+    
+    if alcohol_consumption == 'high':
+        stress_score += 0.10
+    elif alcohol_consumption == 'moderate':
+        stress_score += 0.05
+    
+    if smoking_status == 'current':
+        stress_score += 0.15
+    elif smoking_status == 'recent':
+        stress_score += 0.08
+    
+    # 6. Social and financial factors
+    if social_support == 'poor':
+        stress_score += 0.15
+    elif social_support == 'fair':
+        stress_score += 0.08
+    
+    if financial_stress == 'high':
+        stress_score += 0.20
+    elif financial_stress == 'moderate':
+        stress_score += 0.10
+    
+    return min(stress_score, 1.0)
+
+def analyze_enhanced_lifestyle_fatigue(demographic_data):
+    """Enhanced lifestyle fatigue analysis with comprehensive factors"""
+    fatigue_score = 0.0
+    
+    # Extract lifestyle data
+    sleep_hours = demographic_data.get('sleep_hours', 7)
+    sleep_quality = demographic_data.get('sleep_quality', 'good')
+    sleep_latency = demographic_data.get('sleep_latency', 15)
+    exercise_frequency = demographic_data.get('exercise_frequency', 'moderate')
+    caffeine_intake = demographic_data.get('caffeine_intake', 'moderate')
+    alcohol_consumption = demographic_data.get('alcohol_consumption', 'low')
+    diet_quality = demographic_data.get('diet_quality', 'good')
+    hydration_level = demographic_data.get('hydration_level', 'good')
+    screen_time = demographic_data.get('screen_time', 4)
+    
+    # Advanced fatigue factors
+    # 1. Sleep quantity and quality
+    if sleep_hours < 5:
+        fatigue_score += 0.30
+    elif sleep_hours < 6:
+        fatigue_score += 0.20
+    elif sleep_hours < 7:
+        fatigue_score += 0.10
+    
+    if sleep_quality == 'very_poor':
+        fatigue_score += 0.25
+    elif sleep_quality == 'poor':
+        fatigue_score += 0.20
+    elif sleep_quality == 'fair':
+        fatigue_score += 0.10
+    
+    if sleep_latency > 30:
+        fatigue_score += 0.15
+    elif sleep_latency > 20:
+        fatigue_score += 0.08
+    
+    # 2. Physical activity (inverse relationship)
+    if exercise_frequency == 'none':
+        fatigue_score += 0.20
+    elif exercise_frequency == 'low':
+        fatigue_score += 0.10
+    
+    # 3. Substance use patterns
+    if caffeine_intake == 'very_high':
+        fatigue_score += 0.15
+    elif caffeine_intake == 'high':
+        fatigue_score += 0.10
+    
+    if alcohol_consumption == 'high':
+        fatigue_score += 0.15
+    elif alcohol_consumption == 'moderate':
+        fatigue_score += 0.08
+    
+    # 4. Nutritional factors
+    if diet_quality == 'poor':
+        fatigue_score += 0.15
+    elif diet_quality == 'fair':
+        fatigue_score += 0.08
+    
+    if hydration_level == 'poor':
+        fatigue_score += 0.12
+    elif hydration_level == 'fair':
+        fatigue_score += 0.06
+    
+    # 5. Digital fatigue
+    if screen_time > 8:
+        fatigue_score += 0.10
+    elif screen_time > 6:
+        fatigue_score += 0.05
+    
+    return min(fatigue_score, 1.0)
+
+# Helper functions for confidence calculation and temporal analysis
+def calculate_facial_confidence(facial_data):
+    """Calculate confidence in facial analysis based on data quality"""
+    confidence = 0.0
+    valid_features = 0
+    
+    features = ['eye_openness', 'mouth_tension', 'brow_furrow', 'jaw_clenching', 
+               'blink_rate', 'pupil_dilation', 'facial_asymmetry']
+    
+    for feature in features:
+        if feature in facial_data and facial_data[feature] is not None:
+            valid_features += 1
+    
+    confidence = valid_features / len(features)
+    return min(confidence, 1.0)
+
+def calculate_physiological_confidence(physiological_data):
+    """Calculate confidence in physiological analysis"""
+    confidence = 0.0
+    valid_features = 0
+    
+    features = ['heart_rate', 'hrv', 'skin_temperature', 'respiration_rate']
+    
+    for feature in features:
+        if feature in physiological_data and physiological_data[feature] is not None:
+            valid_features += 1
+    
+    confidence = valid_features / len(features)
+    return min(confidence, 1.0)
+
+def calculate_lifestyle_confidence(demographic_data):
+    """Calculate confidence in lifestyle analysis"""
+    confidence = 0.0
+    valid_features = 0
+    
+    features = ['sleep_hours', 'exercise_frequency', 'stress_level', 'work_hours']
+    
+    for feature in features:
+        if feature in demographic_data and demographic_data[feature] is not None:
+            valid_features += 1
+    
+    confidence = valid_features / len(features)
+    return min(confidence, 1.0)
+
+# Global variables for temporal analysis
+stress_history = []
+fatigue_history = []
+
+def apply_temporal_smoothing(score, metric_type):
+    """Apply temporal smoothing to reduce noise and improve stability"""
+    global stress_history, fatigue_history
+    
+    if metric_type == 'stress':
+        stress_history.append(score)
+        if len(stress_history) > 5:  # Keep last 5 readings
+            stress_history.pop(0)
+        return sum(stress_history) / len(stress_history)
+    else:
+        fatigue_history.append(score)
+        if len(fatigue_history) > 5:
+            fatigue_history.pop(0)
+        return sum(fatigue_history) / len(fatigue_history)
+
+def get_enhanced_stress_level(stress_score, demographic_data):
+    """Enhanced stress level determination with age and context adjustment"""
+    age = demographic_data.get('age', 30) if demographic_data else 30
+    
+    # Age-adjusted thresholds
+    if age > 65:
+        # Elderly: more sensitive to stress
+        if stress_score >= 0.7:
+            return 'Critical'
+        elif stress_score >= 0.5:
+            return 'High'
+        elif stress_score >= 0.3:
+            return 'Moderate'
+        elif stress_score >= 0.15:
+            return 'Low'
+        else:
+            return 'Minimal'
+    elif age < 25:
+        # Young adults: more resilient
+        if stress_score >= 0.8:
+            return 'Critical'
+        elif stress_score >= 0.6:
+            return 'High'
+        elif stress_score >= 0.4:
+            return 'Moderate'
+        elif stress_score >= 0.2:
+            return 'Low'
+        else:
+            return 'Minimal'
+    else:
+        # Standard thresholds for adults
+        if stress_score >= 0.8:
+            return 'Critical'
+        elif stress_score >= 0.6:
+            return 'High'
+        elif stress_score >= 0.4:
+            return 'Moderate'
+        elif stress_score >= 0.2:
+            return 'Low'
+        else:
+            return 'Minimal'
+
+def get_enhanced_fatigue_level(fatigue_score, demographic_data):
+    """Enhanced fatigue level determination with context adjustment"""
+    age = demographic_data.get('age', 30) if demographic_data else 30
+    sleep_hours = demographic_data.get('sleep_hours', 7) if demographic_data else 7
+    
+    # Adjust thresholds based on sleep patterns
+    if sleep_hours < 6:
+        # Lower thresholds for sleep-deprived individuals
+        if fatigue_score >= 0.7:
+            return 'Severe'
+        elif fatigue_score >= 0.5:
+            return 'Moderate'
+        elif fatigue_score >= 0.3:
+            return 'Mild'
+        elif fatigue_score >= 0.15:
+            return 'Slight'
+        else:
+            return 'None'
+    else:
+        # Standard thresholds
+        if fatigue_score >= 0.8:
+            return 'Severe'
+        elif fatigue_score >= 0.6:
+            return 'Moderate'
+        elif fatigue_score >= 0.4:
+            return 'Mild'
+        elif fatigue_score >= 0.2:
+            return 'Slight'
+        else:
+            return 'None'
+
+def identify_risk_factors(stress_score, fatigue_score, demographic_data, physiological_data):
+    """Identify specific risk factors contributing to stress and fatigue"""
+    risk_factors = []
+    
+    if demographic_data:
+        # Sleep-related risks
+        sleep_hours = demographic_data.get('sleep_hours', 7)
+        if sleep_hours < 6:
+            risk_factors.append({
+                'category': 'Sleep',
+                'factor': 'Insufficient sleep',
+                'severity': 'High' if sleep_hours < 5 else 'Moderate',
+                'description': f'Only {sleep_hours} hours of sleep per night'
+            })
+        
+        # Work-related risks
+        work_hours = demographic_data.get('work_hours', 8)
+        if work_hours > 10:
+            risk_factors.append({
+                'category': 'Work',
+                'factor': 'Long work hours',
+                'severity': 'High',
+                'description': f'{work_hours} hours of work per day'
+            })
+        
+        # Lifestyle risks
+        exercise_frequency = demographic_data.get('exercise_frequency', 'moderate')
+        if exercise_frequency == 'none':
+            risk_factors.append({
+                'category': 'Lifestyle',
+                'factor': 'Lack of exercise',
+                'severity': 'Moderate',
+                'description': 'No regular physical activity'
+            })
+    
+    if physiological_data:
+        # Physiological risks
+        heart_rate = physiological_data.get('heart_rate', 70)
+        if heart_rate > 85:
+            risk_factors.append({
+                'category': 'Physiological',
+                'factor': 'Elevated heart rate',
+                'severity': 'Moderate',
+                'description': f'Heart rate: {heart_rate} BPM'
+            })
+        
+        hrv = physiological_data.get('hrv', 50)
+        if hrv < 30:
+            risk_factors.append({
+                'category': 'Physiological',
+                'factor': 'Low heart rate variability',
+                'severity': 'High',
+                'description': f'HRV: {hrv} ms'
+            })
+    
+    return risk_factors
+
+def generate_advanced_recommendations(stress_score, fatigue_score, demographic_data, physiological_data):
+    """Generate advanced, personalized recommendations"""
+    recommendations = []
+    
+    # Stress management recommendations
+    if stress_score >= 0.7:
+        recommendations.append({
+            'category': 'Immediate Stress Relief',
+            'priority': 'Critical',
+            'recommendations': [
+                'Practice 4-7-8 breathing technique immediately',
+                'Take a 10-minute walk in nature',
+                'Listen to calming music or guided meditation',
+                'Consider speaking with a mental health professional',
+                'Implement stress-reduction breaks every 30 minutes'
+            ]
+        })
+    elif stress_score >= 0.5:
+        recommendations.append({
+            'category': 'Stress Management',
+            'priority': 'High',
+            'recommendations': [
+                'Practice mindfulness meditation for 15-20 minutes daily',
+                'Engage in progressive muscle relaxation',
+                'Maintain a consistent sleep schedule (7-9 hours)',
+                'Limit caffeine intake, especially after 2 PM',
+                'Consider yoga or tai chi classes'
+            ]
+        })
+    
+    # Fatigue management recommendations
+    if fatigue_score >= 0.7:
+        recommendations.append({
+            'category': 'Fatigue Recovery',
+            'priority': 'Critical',
+            'recommendations': [
+                'Prioritize 8-9 hours of quality sleep',
+                'Create a relaxing bedtime routine',
+                'Avoid screens 2 hours before bedtime',
+                'Consider a sleep study consultation',
+                'Maintain regular meal times and stay hydrated'
+            ]
+        })
+    elif fatigue_score >= 0.5:
+        recommendations.append({
+            'category': 'Fatigue Management',
+            'priority': 'High',
+            'recommendations': [
+                'Aim for 7-8 hours of consistent sleep',
+                'Create a dark, quiet sleep environment',
+                'Avoid caffeine after 3 PM',
+                'Take short power naps (20 minutes max)',
+                'Maintain regular exercise routine'
+            ]
+        })
+    
+    # Lifestyle optimization
+    if demographic_data:
+        sleep_hours = demographic_data.get('sleep_hours', 7)
+        if sleep_hours < 7:
+            recommendations.append({
+                'category': 'Sleep Optimization',
+                'priority': 'Medium',
+                'recommendations': [
+                    'Gradually increase sleep duration by 15 minutes',
+                    'Establish a consistent bedtime routine',
+                    'Keep bedroom cool (65-68°F) and dark',
+                    'Avoid large meals before bedtime',
+                    'Consider sleep tracking to identify patterns'
+                ]
+            })
+        
+        exercise_frequency = demographic_data.get('exercise_frequency', 'moderate')
+        if exercise_frequency in ['none', 'low']:
+            recommendations.append({
+                'category': 'Physical Activity',
+                'priority': 'Medium',
+                'recommendations': [
+                    'Start with 10-15 minutes of daily walking',
+                    'Gradually increase to 30 minutes, 5 days/week',
+                    'Consider low-impact activities like swimming',
+                    'Find activities you enjoy to maintain consistency',
+                    'Consult with a fitness professional if needed'
+                ]
+            })
+    
+    # Prevention and maintenance
+    if stress_score < 0.4 and fatigue_score < 0.4:
+        recommendations.append({
+            'category': 'Wellness Maintenance',
+            'priority': 'Low',
+            'recommendations': [
+                'Continue current healthy habits',
+                'Regular health check-ups',
+                'Maintain social connections',
+                'Practice gratitude and positive thinking',
+                'Consider stress management workshops'
+            ]
+        })
+    
+    return recommendations
+
+def generate_mediapipe_recommendations(stress_score, fatigue_score, demographic_data):
+    """
+    Generate personalized recommendations based on MediaPipe facial analysis
+    """
+    recommendations = []
+    
+    # Stress recommendations based on facial features
+    if stress_score > 0.7:
+        recommendations.extend([
+            "🧘 **Immediate Stress Relief**: Practice deep breathing exercises (4-7-8 technique)",
+            "👁️ **Eye Strain**: Take 20-second breaks every 20 minutes, look at something 20 feet away",
+            "😌 **Facial Tension**: Gentle facial massage to release jaw and brow tension",
+            "🏃 **Physical Activity**: 10-minute walk to reduce cortisol levels",
+            "💧 **Hydration**: Drink water to support stress response"
+        ])
+    elif stress_score > 0.4:
+        recommendations.extend([
+            "🌿 **Mindfulness**: 5-minute meditation session",
+            "🎵 **Relaxation**: Listen to calming music",
+            "📱 **Digital Detox**: Take a 30-minute break from screens",
+            "🍃 **Nature**: Spend time outdoors if possible"
+        ])
+    
+    # Fatigue recommendations based on facial features
+    if fatigue_score > 0.7:
+        recommendations.extend([
+            "😴 **Rest**: Take a 20-minute power nap",
+            "💡 **Light Therapy**: Get exposure to natural light",
+            "🚶 **Movement**: Gentle stretching to improve circulation",
+            "🥤 **Caffeine**: Consider a small amount if not contraindicated",
+            "👁️ **Eye Care**: Rest your eyes with warm compress"
+        ])
+    elif fatigue_score > 0.4:
+        recommendations.extend([
+            "💧 **Hydration**: Ensure adequate water intake",
+            "🍎 **Nutrition**: Eat a balanced snack",
+            "🔄 **Posture**: Adjust your sitting position",
+            "🌬️ **Fresh Air**: Open a window for better ventilation"
+        ])
+    
+    # General wellness recommendations
+    recommendations.extend([
+        "📊 **Monitor**: Continue tracking your stress and fatigue levels",
+        "🏥 **Consult**: Consider professional advice if symptoms persist",
+        "📱 **App Usage**: Use stress management apps for guided sessions"
+    ])
+    
+    return recommendations[:8]  # Limit to top 8 recommendations
+
+@app.route('/mediapipe_analysis')
+def mediapipe_analysis():
+    """MediaPipe-based stress and fatigue analysis page"""
+    return render_template('mediapipe_analysis.html')
+
+@app.route('/api/mediapipe_analysis', methods=['POST'])
+def api_mediapipe_analysis():
+    """API endpoint for MediaPipe stress and fatigue analysis"""
+    try:
+        data = request.get_json()
+        
+        # Extract data
+        facial_data = data.get('facial_data', {})
+        physiological_data = data.get('physiological_data', {})
+        demographic_data = data.get('demographic_data', {})
+        
+        if MEDIAPIPE_AVAILABLE and mediapipe_model:
+            # Use MediaPipe model for analysis
+            result = mediapipe_model.predict_stress_fatigue(
+                facial_data, physiological_data, demographic_data
+            )
+            
+            if result.get('model_available', False):
+                # Determine levels
+                stress_level = "Low" if result['stress_score'] < 0.3 else "Moderate" if result['stress_score'] < 0.7 else "High"
+                fatigue_level = "Low" if result['fatigue_score'] < 0.3 else "Moderate" if result['fatigue_score'] < 0.7 else "High"
+                
+                # Generate recommendations
+                recommendations = generate_mediapipe_recommendations(
+                    result['stress_score'], result['fatigue_score'], demographic_data
+                )
+                
+                return jsonify({
+                    'success': True,
+                    'stress_score': result['stress_score'],
+                    'fatigue_score': result['fatigue_score'],
+                    'confidence': result['confidence'],
+                    'stress_level': stress_level,
+                    'fatigue_level': fatigue_level,
+                    'model_version': result.get('model_version', 'MediaPipe v1.0'),
+                    'analysis_method': 'MediaPipe Facial Landmarks + Deep Learning',
+                    'recommendations': recommendations,
+                    'facial_features': result.get('facial_features', []),
+                    'physiological_features': result.get('physiological_features', []),
+                    'timestamp': datetime.now().isoformat()
+                })
+            else:
+                return jsonify({
+                    'success': False,
+                    'error': 'MediaPipe model not available',
+                    'fallback_available': True
+                })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'MediaPipe not available',
+                'fallback_available': True
+            })
+            
+    except Exception as e:
+        print(f"Error in MediaPipe analysis API: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        })
+
+# --- Heatstroke Predictor Integration ---
+import sys
+sys.path.append('../CSV datasets')
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+import joblib
+
+class DashboardHeatstrokePredictor:
+    def __init__(self):
+        self.model = None
+        self.scaler = None
+        self.label_encoders = {}
+        self.feature_names = []
+        self.is_trained = False
+        self._initialize()
+
+    def _initialize(self):
+        # Only train once and cache
+        try:
+            train_df = pd.read_csv('../CSV datasets/health_heatstroke_train_2000_temp (1).csv')
+            test_df = pd.read_csv('../CSV datasets/health_heatstroke_test_2000_temp (1).csv')
+            # --- Fix: Standardize label column name ---
+            for df in [train_df, test_df]:
+                if 'heat stroke' in df.columns:
+                    df.rename(columns={'heat stroke': 'Heatstroke'}, inplace=True)
+            combined_df = pd.concat([train_df, test_df], ignore_index=True)
+            X, y = self._preprocess_features(combined_df)
+            train_size = len(train_df)
+            X_train = X[:train_size]
+            y_train = y[:train_size]
+            self.model = RandomForestClassifier(n_estimators=100, max_depth=10, random_state=42, n_jobs=-1)
+            self.scaler = StandardScaler()
+            X_train_scaled = self.scaler.fit_transform(X_train)
+            self.model.fit(X_train_scaled, y_train)
+            self.is_trained = True
+            print("✅ Heatstroke model trained and ready.")
+        except Exception as e:
+            print(f"❌ Error initializing heatstroke model: {e}")
+            self.is_trained = False
+
+    def _preprocess_features(self, df):
+        data = df.copy()
+        categorical_cols = ['Gender', 'Headache', 'Dizziness', 'Nausea', 'Vomiting', 
+            'Muscle_Cramps', 'Weakness', 'Fatigue', 'Hot_Skin', 'Dry_Skin',
+            'Rapid_Breathing', 'Cardiovascular_Disease', 'Diabetes', 
+            'Obesity', 'Elderly', 'Heat_Sensitive_Medications', 'Dehydration',
+            'Alcohol_Use', 'Previous_Heat_Illness', 'Poor_Heat_Acclimation',
+            'Prolonged_Exertion', 'High_Blood_Pressure', 'Smoking']
+        for col in categorical_cols:
+            if col in data.columns:
+                if col not in self.label_encoders:
+                    self.label_encoders[col] = LabelEncoder()
+                    data[col] = self.label_encoders[col].fit_transform(data[col].astype(str))
+                else:
+                    data[col] = data[col].astype(str)
+                    data[col] = data[col].map(lambda x: x if x in self.label_encoders[col].classes_ else 'Unknown')
+                    data[col] = self.label_encoders[col].transform(data[col])
+        feature_cols = ['Age', 'Gender', 'Temperature', 'Heart_Rate', 'Blood_Pressure_Systolic',
+            'Blood_Pressure_Diastolic', 'Headache', 'Dizziness', 'Nausea', 'Vomiting',
+            'Muscle_Cramps', 'Weakness', 'Fatigue', 'Hot_Skin', 'Dry_Skin',
+            'Rapid_Breathing', 'Cardiovascular_Disease', 'Diabetes', 'Obesity',
+            'Elderly', 'Heat_Sensitive_Medications', 'Dehydration', 'Alcohol_Use',
+            'Previous_Heat_Illness', 'Poor_Heat_Acclimation', 'Prolonged_Exertion',
+            'High_Blood_Pressure', 'Smoking']
+        available_features = [col for col in feature_cols if col in data.columns]
+        self.feature_names = available_features
+        X = data[available_features].fillna(0)
+        y = data['Heatstroke'].astype(int)
+        return X, y
+
+    def predict(self, health_data, bpm_data=None):
+        if not self.is_trained:
+            return {'error': 'Model not trained'}
+        features = []
+        for feature in self.feature_names:
+            if feature == 'Age':
+                features.append(health_data.get('age', 30))
+            elif feature == 'Gender':
+                gender = health_data.get('gender', 'male')
+                if gender in self.label_encoders.get('Gender', {}).classes_:
+                    features.append(self.label_encoders['Gender'].transform([gender])[0])
+                else:
+                    features.append(0)
+            elif feature == 'Temperature':
+                if bpm_data and 'skin_temperature' in bpm_data:
+                    features.append(bpm_data['skin_temperature'])
+                else:
+                    features.append(37.0)
+            elif feature == 'Heart_Rate':
+                if bpm_data and 'bpm' in bpm_data:
+                    features.append(bpm_data['bpm'])
+                else:
+                    features.append(72.0)
+            elif feature == 'Blood_Pressure_Systolic':
+                features.append(120.0)
+            elif feature == 'Blood_Pressure_Diastolic':
+                features.append(80.0)
+            else:
+                value = 0
+                if feature.lower() in [s.lower() for s in health_data.get('symptoms', [])]:
+                    value = 1
+                elif feature.lower() in [s.lower() for s in health_data.get('medical_history', [])]:
+                    value = 1
+                elif feature.lower() in [s.lower() for s in health_data.get('risk_factors', [])]:
+                    value = 1
+                if feature == 'High_Blood_Pressure' and 'high_blood_pressure' in health_data.get('risk_factors', []):
+                    value = 1
+                elif feature == 'Diabetes' and ('diabetes' in health_data.get('medical_history', []) or 'diabetes' in health_data.get('risk_factors', [])):
+                    value = 1
+                elif feature == 'Elderly' and health_data.get('age', 0) > 65:
+                    value = 1
+                features.append(value)
+        features_scaled = self.scaler.transform([features])
+        prediction = self.model.predict(features_scaled)[0]
+        probability = self.model.predict_proba(features_scaled)[0]
+        return {
+            'heatstroke_prediction': bool(prediction),
+            'heatstroke_probability': float(probability[1] if len(probability) > 1 else probability[0]),
+            'risk_level': self._get_risk_level(probability[1] if len(probability) > 1 else probability[0]),
+            'features_used': self.feature_names,
+            'feature_values': dict(zip(self.feature_names, features))
+        }
+    def _get_risk_level(self, probability):
+        if probability < 0.3:
+            return "Low"
+        elif probability < 0.7:
+            return "Moderate"
+        else:
+            return "High"
+
+# Instantiate and cache the predictor
+heatstroke_predictor = DashboardHeatstrokePredictor()
+
+@app.route('/api/heatstroke_prediction', methods=['POST'])
+def api_heatstroke_prediction():
+    data = request.get_json()
+    health_data = data.get('health_data', {})
+    bpm_data = data.get('bpm_data', {})
+    result = heatstroke_predictor.predict(health_data, bpm_data)
+    return jsonify(result)
+
+def print_latest_heatstroke_prediction():
+    """Print the heatstroke prediction for the latest assessment in demographics_data."""
+    if not demographics_data:
+        print("❌ No health assessment data in memory. Submit an assessment first.")
+        sys.stdout.flush()
+        return
+    latest = demographics_data[-1]
+    print("\n--- Latest Health Assessment ---")
+    print(f"Age: {latest.get('age')}")
+    print(f"Gender: {latest.get('gender')}")
+    print(f"Symptoms: {latest.get('symptoms', [])}")
+    print(f"Medical History: {latest.get('medical_history', [])}")
+    print(f"Risk Factors: {latest.get('risk_factors', [])}")
+    print(f"Date: {latest.get('date', latest.get('timestamp'))}")
+    
+    # Get BPM data from newA.py analysis
+    try:
+        from newA import run_pulse_rate_from_csv
+        bpm, confidence, infection_score, dehydration_score, arrhythmia_score = run_pulse_rate_from_csv("../BPM/A.csv", fs=10, plot_spectrogram=False)
+        bpm_data = {
+            'bpm': bpm,
+            'confidence': confidence,
+            'skin_temperature': 34.6  # From the logs
+        }
+        print(f"📊 BPM Data: {bpm:.1f} BPM, Confidence: {confidence:.3f}")
+    except Exception as e:
+        print(f"⚠️ Could not get BPM data: {e}")
+        bpm_data = None
+    
+    # Use the DashboardHeatstrokePredictor
+    result = heatstroke_predictor.predict(latest, bpm_data)
+    
+    if 'error' in result:
+        print(f"❌ Error: {result['error']}")
+    else:
+        print(f"\n🔥 Heatstroke Risk Prediction:")
+        print(f"   Risk: {'HIGH' if result['heatstroke_prediction'] else 'LOW'}")
+        print(f"   Probability: {result['heatstroke_probability']*100:.1f}%")
+        print(f"   Risk Level: {result['risk_level']}")
+        
+        # Show key features that influenced the prediction
+        print(f"\n🔍 Key Features:")
+        for feature, value in result['feature_values'].items():
+            if value != 0:  # Only show non-zero features
+                print(f"   {feature}: {value}")
+    print("\n✅ Heatstroke prediction complete.\n")
+    sys.stdout.flush()
+
+@app.route('/api/latest_heatstroke_prediction')
+def get_latest_heatstroke_prediction():
+    """Get heatstroke prediction for the latest stored assessment data."""
+    if not demographics_data:
+        return jsonify({
+            'success': False,
+            'error': 'No health assessment data available. Please submit an assessment first.'
+        })
+    
+    latest = demographics_data[-1]
+    
+    # Get BPM data from newA.py analysis
+    try:
+        from newA import run_pulse_rate_from_csv
+        bpm, confidence, infection_score, dehydration_score, arrhythmia_score = run_pulse_rate_from_csv("../BPM/A.csv", fs=10, plot_spectrogram=False)
+        bpm_data = {
+            'bpm': bpm,
+            'confidence': confidence,
+            'skin_temperature': 34.6  # From the logs
+        }
+    except Exception as e:
+        print(f"⚠️ Could not get BPM data: {e}")
+        bpm_data = None
+    
+    # Get prediction
+    result = heatstroke_predictor.predict(latest, bpm_data)
+    
+    if 'error' in result:
+        return jsonify({
+            'success': False,
+            'error': result['error']
+        })
+    
+    return jsonify({
+        'success': True,
+        'prediction': result,
+        'health_data': latest,
+        'bpm_data': bpm_data
+    })
+
 if __name__ == '__main__':
+    import sys
+    
+    # Check if this is a CLI command
+    if len(sys.argv) > 1 and sys.argv[1] == "--print-latest-heatstroke":
+        print_latest_heatstroke_prediction()
+        sys.exit(0)
+    
     # Start Arduino data reading thread
     arduino_thread = threading.Thread(target=read_arduino_data, daemon=True)
     arduino_thread.start()
@@ -665,4 +2253,4 @@ if __name__ == '__main__':
     
     print("Arduino Dashboard starting...")
     print("Open http://localhost:5002 in your browser")
-    socketio.run(app, host='0.0.0.0', port=5002, debug=True) 
+    socketio.run(app, host='0.0.0.0', port=5002, debug=True)

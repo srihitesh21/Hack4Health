@@ -34,7 +34,8 @@
                     <button id="refreshBtn" class="btn btn-secondary">Refresh Data</button>
                     <a href="/demographics" class="btn btn-info">Health Assessment</a>
                     <a href="/stress_fatigue_analysis" class="btn btn-warning">🧠 Stress Analysis</a>
-                    <a href="/demographics#heatstrokeSection" class="btn btn-danger">🌡️ Heatstroke Risk</a>
+    
+                    <button id="testSunstrokeBtn" class="btn btn-danger">☀️ Test for Sunstroke</button>
                 </div>
             </div>
         </div>
@@ -138,6 +139,61 @@
                                     </div>
                                 </div>
                             </div>
+                            
+                            <!-- Detailed Heatstroke Prediction Section -->
+                            <div class="row mt-4">
+                                <div class="col-12">
+                                    <div class="card heatstroke-detailed-card">
+                                        <div class="card-header">
+                                            <h5><i class="fas fa-fire"></i> 🔥 Detailed Heatstroke Risk Assessment</h5>
+                                            <small class="text-muted">AI-powered prediction using health assessment and BPM data</small>
+                                        </div>
+                                        <div class="card-body">
+                                            <div id="heatstroke-detailed-display">
+                                                <div class="row">
+                                                    <div class="col-md-4">
+                                                        <div class="heatstroke-summary-card">
+                                                            <h6><i class="fas fa-chart-pie"></i> Risk Summary</h6>
+                                                            <div class="risk-summary">
+                                                                <div class="risk-level" id="detailed-risk-level">--</div>
+                                                                <div class="risk-probability" id="detailed-risk-probability">--</div>
+                                                                <div class="risk-prediction" id="detailed-risk-prediction">--</div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <div class="heatstroke-features-card">
+                                                            <h6><i class="fas fa-list-check"></i> Key Risk Factors</h6>
+                                                            <div id="key-features-list" class="features-list">
+                                                                <div class="text-muted">Loading risk factors...</div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <div class="heatstroke-data-card">
+                                                            <h6><i class="fas fa-database"></i> Input Data</h6>
+                                                            <div id="input-data-display" class="input-data">
+                                                                <div class="text-muted">Loading input data...</div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="row mt-3">
+                                                    <div class="col-12">
+                                                        <div class="heatstroke-recommendations">
+                                                            <h6><i class="fas fa-lightbulb"></i> Recommendations</h6>
+                                                            <div id="heatstroke-recommendations" class="recommendations-list">
+                                                                <div class="text-muted">Loading recommendations...</div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
                             <div class="row mt-3">
                                 <div class="col-md-6">
                                     <h6>Time Domain Signal</h6>

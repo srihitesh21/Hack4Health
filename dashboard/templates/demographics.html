@@ -245,6 +245,10 @@
         /* Heatstroke Prediction Styles */
         .heatstroke-prediction {
             margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            border: 1px solid #e9ecef;
         }
         
         .prediction-card {
@@ -517,51 +521,10 @@
                     </div>
                 </div>
 
-                        <!-- Heatstroke Prediction Section -->
-        <div class="form-section" id="heatstrokeSection" style="display: none;">
-            <h4><i class="fas fa-thermometer-half text-warning"></i> Heatstroke Risk Assessment</h4>
-            <p class="text-muted">Based on your health data and current BPM readings, here's your heatstroke risk assessment:</p>
-            
-            <div class="heatstroke-prediction">
-                <div class="prediction-card">
-                    <div class="prediction-header">
-                        <h5>Heatstroke Risk Prediction</h5>
-                        <div class="prediction-status" id="predictionStatus">Analyzing...</div>
-                    </div>
-                    <div class="prediction-details">
-                        <div class="prediction-item">
-                            <span class="label">Risk Level:</span>
-                            <span class="value" id="riskLevel">-</span>
-                        </div>
-                        <div class="prediction-item">
-                            <span class="label">Probability:</span>
-                            <span class="value" id="riskProbability">-</span>
-                        </div>
-                        <div class="prediction-item">
-                            <span class="label">Current BPM:</span>
-                            <span class="value" id="currentBPM">-</span>
-                        </div>
-                        <div class="prediction-item">
-                            <span class="label">Skin Temperature:</span>
-                            <span class="value" id="skinTemperature">-</span>
-                        </div>
-                    </div>
-                    <div class="prediction-recommendations" id="recommendations" style="display: none;">
-                        <h6>Recommendations:</h6>
-                        <ul id="recommendationsList"></ul>
-                    </div>
-                </div>
-            </div>
-            
-            <button type="button" class="btn btn-primary" id="predictHeatstroke" style="margin-top: 15px;">
-                <i class="fas fa-calculator"></i> Calculate Heatstroke Risk
-            </button>
-        </div>
-
-        <!-- Original Risk Factors Section -->
-        <div class="form-section">
-            <h4><i class="fas fa-heartbeat text-danger"></i> Stroke Risk Factors</h4>
-            <p class="text-muted">Select all applicable risk factors:</p>
+                <!-- Original Risk Factors Section -->
+                <div class="form-section">
+                    <h4><i class="fas fa-heartbeat text-danger"></i> Stroke Risk Factors</h4>
+                    <p class="text-muted">Select all applicable risk factors:</p>
                     
                     <div class="row">
                         <div class="col-md-6">
@@ -682,22 +645,7 @@
             <div id="healthMessage" class="message"></div>
         </div>
         
-        <div id="risk-cards" style="display:none; margin-top: 30px;">
-            <div class="row">
-                <div class="col risk-card" id="infection-risk-card">
-                    <h5>Infection Risk</h5>
-                    <div class="risk-value" id="infection-risk-value">0.0</div>
-                </div>
-                <div class="col risk-card" id="dehydration-risk-card">
-                    <h5>Dehydration Risk</h5>
-                    <div class="risk-value" id="dehydration-risk-value">0.0</div>
-                </div>
-                <div class="col risk-card" id="arrhythmia-risk-card">
-                    <h5>Arrhythmia Risk</h5>
-                    <div class="risk-value" id="arrhythmia-risk-value">0.0</div>
-                </div>
-            </div>
-        </div>
+
         
         <div class="nav-links">
             <a href="/">Back to Dashboard</a>
@@ -739,14 +687,21 @@
             })
             .then(response => response.json())
             .then(data => {
+                console.log('Response from server:', data); // Debug logging
                 if (data.success) {
                     showSuccessMessage('Assessment submitted successfully!');
                     loadStoredData();
                     
-                    // Show risk cards if available
-                    if (data.risk_scores) {
-                        displayRiskCards(data.risk_scores);
+
+                    
+                    // Show heatstroke prediction if available
+                    if (data.heatstroke_prediction) {
+                        console.log('Displaying heatstroke prediction:', data.heatstroke_prediction); // Debug logging
+                        displayHeatstrokePrediction(data.heatstroke_prediction);
+                    } else {
+                        console.log('No heatstroke prediction in response'); // Debug logging
                     }
+
                 } else {
                     showErrorMessage('Error submitting assessment: ' + data.error);
                 }
@@ -756,37 +711,97 @@
             });
         }
 
-        function displayRiskCards(riskScores) {
-            const riskCardsDiv = document.getElementById('risk-cards');
-            if (!riskCardsDiv) return;
 
-            // Update risk values with null checks
-            const infectionScore = riskScores.infection_score || 0;
-            const dehydrationScore = riskScores.dehydration_score || 0;
-            const arrhythmiaScore = riskScores.arrhythmia_score || 0;
 
-            document.getElementById('infection-risk-value').textContent = infectionScore.toFixed(1);
-            document.getElementById('dehydration-risk-value').textContent = dehydrationScore.toFixed(1);
-            document.getElementById('arrhythmia-risk-value').textContent = arrhythmiaScore.toFixed(1);
 
-            // Update card styling based on risk levels
-            updateRiskCardStyle('infection-risk-card', infectionScore);
-            updateRiskCardStyle('dehydration-risk-card', dehydrationScore);
-            updateRiskCardStyle('arrhythmia-risk-card', arrhythmiaScore);
 
-            riskCardsDiv.style.display = 'block';
-        }
-
-        function updateRiskCardStyle(cardId, score) {
-            const card = document.getElementById(cardId);
-            if (!card) return;
-
-            card.classList.remove('high-risk', 'low-risk');
-            if (score > 0.5) {
-                card.classList.add('high-risk');
-            } else if (score > 0) {
-                card.classList.add('low-risk');
+        function displayHeatstrokePrediction(prediction) {
+            console.log('displayHeatstrokePrediction called with:', prediction); // Debug logging
+            
+            // Create or update heatstroke prediction display
+            let heatstrokeDiv = document.getElementById('heatstroke-prediction-display');
+            if (!heatstrokeDiv) {
+                console.log('Creating new heatstroke prediction div'); // Debug logging
+                heatstrokeDiv = document.createElement('div');
+                heatstrokeDiv.id = 'heatstroke-prediction-display';
+                heatstrokeDiv.className = 'heatstroke-prediction';
+                document.querySelector('.demographics-container').appendChild(heatstrokeDiv);
             }
+
+            const probability = (prediction.heatstroke_probability * 100).toFixed(1);
+            const riskLevel = prediction.risk_level;
+            const isHighRisk = prediction.heatstroke_prediction;
+
+            // Get BPM and skin temperature from the prediction
+            const bpm = prediction.feature_values?.Heart_Rate || 'N/A';
+            const skinTemp = prediction.feature_values?.Skin_Temperature || 'N/A';
+
+            // Generate recommendations based on risk level
+            let recommendations = [];
+            if (riskLevel === 'High' || isHighRisk) {
+                recommendations = [
+                    'Immediately move to a cool environment',
+                    'Remove excess clothing',
+                    'Apply cool water to skin',
+                    'Seek immediate medical attention',
+                    'Avoid any physical activity'
+                ];
+            } else if (riskLevel === 'Moderate') {
+                recommendations = [
+                    'Move to air-conditioned environment',
+                    'Stay hydrated with cool water',
+                    'Take frequent breaks',
+                    'Monitor for symptoms of heat exhaustion',
+                    'Consider stopping outdoor activities'
+                ];
+            } else {
+                recommendations = [
+                    'Continue normal activities with standard precautions',
+                    'Stay hydrated throughout the day',
+                    'Take regular breaks if working outdoors',
+                    'Monitor for any new symptoms'
+                ];
+            }
+
+            heatstrokeDiv.innerHTML = `
+                <div class="prediction-card">
+                    <div class="prediction-header">
+                        <h5>🔥 Heatstroke Risk Assessment</h5>
+                        <span class="prediction-status ${riskLevel.toLowerCase()}-risk">${riskLevel.toUpperCase()}</span>
+                    </div>
+                    <p class="text-muted">Based on your health data and current BPM readings, here's your heatstroke risk assessment:</p>
+                    
+                    <div class="prediction-details">
+                        <div class="prediction-item">
+                            <span class="label">Risk Level:</span>
+                            <span class="value">${riskLevel.toUpperCase()}</span>
+                        </div>
+                        <div class="prediction-item">
+                            <span class="label">Probability:</span>
+                            <span class="value">${probability}%</span>
+                        </div>
+                        <div class="prediction-item">
+                            <span class="label">Current BPM:</span>
+                            <span class="value">${bpm} BPM</span>
+                        </div>
+                        <div class="prediction-item">
+                            <span class="label">Skin Temperature:</span>
+                            <span class="value">${skinTemp}°C</span>
+                        </div>
+                    </div>
+                    
+                    <div class="prediction-recommendations">
+                        <h6>Recommendations:</h6>
+                        <ul>
+                            ${recommendations.map(rec => `<li>${rec}</li>`).join('')}
+                        </ul>
+                    </div>
+                </div>
+            `;
+
+            // Show the prediction
+            heatstrokeDiv.style.display = 'block';
+            console.log('Heatstroke prediction display completed'); // Debug logging
         }
 
         function loadStoredData() {
@@ -877,9 +892,6 @@
             messageDiv.className = 'message success';
             messageDiv.style.display = 'block';
             
-            // Show heatstroke section after successful health assessment
-            document.getElementById('heatstrokeSection').style.display = 'block';
-            
             setTimeout(() => {
                 messageDiv.style.display = 'none';
             }, 5000);
@@ -899,182 +911,15 @@
         // Load stored data when page loads
         document.addEventListener('DOMContentLoaded', function() {
             loadStoredData();
-            
-            // Show heatstroke section if we have health data
-            const storedData = JSON.parse(localStorage.getItem('healthAssessmentData') || '{}');
-            if (storedData.age && storedData.gender) {
-                document.getElementById('heatstrokeSection').style.display = 'block';
-            }
-            
-            // Add event listener for heatstroke prediction button
-            document.getElementById('predictHeatstroke').addEventListener('click', predictHeatstroke);
         });
         
-        // Heatstroke Prediction Function
-        async function predictHeatstroke() {
-            const button = document.getElementById('predictHeatstroke');
-            const statusElement = document.getElementById('predictionStatus');
-            
-            // Disable button and show loading
-            button.disabled = true;
-            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Calculating...';
-            statusElement.textContent = 'Analyzing...';
-            statusElement.className = 'prediction-status analyzing';
-            
-            try {
-                // Get current health assessment data
-                const healthData = JSON.parse(localStorage.getItem('healthAssessmentData') || '{}');
-                
-                // Get current BPM data from the dashboard
-                const bpmData = await getCurrentBPMData();
-                
-                // Prepare data for prediction
-                const predictionData = {
-                    health_data: {
-                        age: parseInt(healthData.age) || 30,
-                        gender: healthData.gender || 'male',
-                        symptoms: healthData.symptoms || [],
-                        medical_history: healthData.medical_history || [],
-                        risk_factors: healthData.risk_factors || []
-                    },
-                    bpm_data: bpmData
-                };
-                
-                // Send prediction request
-                const response = await fetch('/api/heatstroke_prediction', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(predictionData)
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
-                const result = await response.json();
-                
-                // Update UI with prediction results
-                displayHeatstrokePrediction(result);
-                
-            } catch (error) {
-                console.error('Heatstroke prediction error:', error);
-                statusElement.textContent = 'Error';
-                statusElement.className = 'prediction-status high-risk';
-                showErrorMessage('Failed to calculate heatstroke risk. Please try again.');
-            } finally {
-                // Re-enable button
-                button.disabled = false;
-                button.innerHTML = '<i class="fas fa-calculator"></i> Calculate Heatstroke Risk';
-            }
-        }
+
         
-        // Get current BPM data from dashboard
-        async function getCurrentBPMData() {
-            try {
-                // Try to get BPM data from the dashboard API
-                const response = await fetch('/api/csv_analysis');
-                if (response.ok) {
-                    const data = await response.json();
-                    return {
-                        bpm: data.bpm || 75,
-                        skin_temperature: data.skin_temperature || 36.5
-                    };
-                }
-            } catch (error) {
-                console.warn('Could not fetch BPM data:', error);
-            }
-            
-            // Fallback to default values
-            return {
-                bpm: 75,
-                skin_temperature: 36.5
-            };
-        }
+
         
-        // Display heatstroke prediction results
-        function displayHeatstrokePrediction(result) {
-            const statusElement = document.getElementById('predictionStatus');
-            const riskLevelElement = document.getElementById('riskLevel');
-            const probabilityElement = document.getElementById('riskProbability');
-            const bpmElement = document.getElementById('currentBPM');
-            const tempElement = document.getElementById('skinTemperature');
-            const recommendationsElement = document.getElementById('recommendations');
-            const recommendationsList = document.getElementById('recommendationsList');
-            
-            // Update status and risk level
-            const isHighRisk = result.heatstroke_prediction;
-            const probability = result.probability || 0;
-            
-            if (isHighRisk) {
-                statusElement.textContent = 'High Risk';
-                statusElement.className = 'prediction-status high-risk';
-                riskLevelElement.textContent = 'HIGH';
-                riskLevelElement.style.color = '#d32f2f';
-            } else if (probability > 0.3) {
-                statusElement.textContent = 'Moderate Risk';
-                statusElement.className = 'prediction-status moderate-risk';
-                riskLevelElement.textContent = 'MODERATE';
-                riskLevelElement.style.color = '#f57c00';
-            } else {
-                statusElement.textContent = 'Low Risk';
-                statusElement.className = 'prediction-status low-risk';
-                riskLevelElement.textContent = 'LOW';
-                riskLevelElement.style.color = '#388e3c';
-            }
-            
-            // Update values
-            probabilityElement.textContent = `${(probability * 100).toFixed(1)}%`;
-            bpmElement.textContent = `${result.bpm_data?.bpm || 'N/A'} BPM`;
-            tempElement.textContent = `${result.bpm_data?.skin_temperature || 'N/A'}°C`;
-            
-            // Update recommendations
-            const recommendations = getRecommendations(isHighRisk, probability, result.bpm_data);
-            recommendationsList.innerHTML = '';
-            recommendations.forEach(rec => {
-                const li = document.createElement('li');
-                li.textContent = rec;
-                recommendationsList.appendChild(li);
-            });
-            recommendationsElement.style.display = 'block';
-            
-            showSuccessMessage('Heatstroke risk assessment completed successfully!');
-        }
+
         
-        // Get recommendations based on risk level
-        function getRecommendations(isHighRisk, probability, bpmData) {
-            const recommendations = [];
-            
-            if (isHighRisk) {
-                recommendations.push('Seek immediate medical attention');
-                recommendations.push('Move to a cool environment immediately');
-                recommendations.push('Remove excess clothing');
-                recommendations.push('Apply cool compresses to neck, armpits, and groin');
-                recommendations.push('Drink cool water if conscious');
-            } else if (probability > 0.3) {
-                recommendations.push('Monitor your symptoms closely');
-                recommendations.push('Stay hydrated with water or sports drinks');
-                recommendations.push('Take breaks in cool, shaded areas');
-                recommendations.push('Avoid strenuous activity during peak heat hours');
-                recommendations.push('Wear lightweight, loose-fitting clothing');
-            } else {
-                recommendations.push('Continue normal activities with standard precautions');
-                recommendations.push('Stay hydrated throughout the day');
-                recommendations.push('Take regular breaks if working outdoors');
-                recommendations.push('Monitor for any new symptoms');
-            }
-            
-            // Add specific recommendations based on BPM and temperature
-            if (bpmData?.bpm > 100) {
-                recommendations.push('Your heart rate is elevated - consider resting');
-            }
-            if (bpmData?.skin_temperature > 37.5) {
-                recommendations.push('Your skin temperature is elevated - seek cooler environment');
-            }
-            
-            return recommendations;
-        }
+
 
         // Camera and Facial Analysis Variables
         let stream = null;
@@ -1233,6 +1078,8 @@
             // Show results
             document.getElementById('analysisResults').style.display = 'block';
         }
+
+
     </script>
 </body>
 </html> 

@@ -1,105 +1,87 @@
 [
   {
-    "age": "77",
+    "age": "99",
     "gender": "male",
     "symptoms": [
-      "headache",
-      "dizziness",
-      "nausea",
-      "vomiting",
-      "muscle_cramps",
-      "weakness",
-      "fatigue",
-      "hot_skin"
+      "rapid_breathing"
     ],
     "medical_history": [
-      "cardiovascular_disease",
-      "obesity",
-      "elderly",
-      "heat_sensitive_medications",
-      "alcohol_use",
-      "previous_heat_illness",
-      "poor_heat_acclimation",
-      "prolonged_exertion"
+      "heat_sensitive_medications"
     ],
     "risk_factors": [
-      "high_blood_pressure",
-      "diabetes",
-      "smoking",
       "obesity"
     ],
     "facial_analysis": null,
-    "timestamp": 1751318723.041135,
-    "date": "30/06/2025, 14:25:23"
+    "timestamp": 1751328592.369007,
+    "date": "30/06/2025, 17:09:52"
   },
   {
-    "age": "77",
+    "age": "99",
     "gender": "male",
     "symptoms": [
-      "headache",
-      "dizziness",
-      "nausea",
-      "vomiting",
-      "muscle_cramps",
-      "weakness",
-      "fatigue",
-      "hot_skin"
+      "rapid_breathing"
     ],
     "medical_history": [
-      "cardiovascular_disease",
-      "obesity",
-      "elderly",
-      "heat_sensitive_medications",
-      "alcohol_use",
-      "previous_heat_illness",
-      "poor_heat_acclimation",
-      "prolonged_exertion"
+      "heat_sensitive_medications"
     ],
     "risk_factors": [
-      "high_blood_pressure",
-      "diabetes",
-      "smoking",
       "obesity"
     ],
     "facial_analysis": null,
-    "timestamp": 1751319552.172514,
-    "date": "30/06/2025, 14:39:12"
+    "timestamp": 1751328592.369468,
+    "date": "30/06/2025, 17:09:52"
   },
   {
-    "age": "77",
+    "age": "99",
     "gender": "male",
-    "symptoms": [
-      "headache",
-      "dizziness",
-      "nausea",
-      "vomiting",
-      "muscle_cramps",
-      "weakness",
-      "fatigue",
-      "hot_skin"
-    ],
+    "symptoms": [],
     "medical_history": [
-      "cardiovascular_disease",
-      "obesity",
-      "elderly",
-      "heat_sensitive_medications",
-      "alcohol_use",
-      "previous_heat_illness",
-      "poor_heat_acclimation",
-      "prolonged_exertion"
+      "diabetes"
     ],
-    "risk_factors": [
-      "high_blood_pressure",
-      "diabetes",
-      "smoking",
-      "obesity"
-    ],
+    "risk_factors": [],
     "facial_analysis": null,
-    "timestamp": 1751319553.336503,
-    "date": "30/06/2025, 14:39:13"
+    "timestamp": 1751328607.278931,
+    "date": "30/06/2025, 17:10:07"
   },
   {
-    "age": "77",
+    "age": "99",
+    "gender": "male",
+    "symptoms": [],
+    "medical_history": [
+      "diabetes"
+    ],
+    "risk_factors": [],
+    "facial_analysis": null,
+    "timestamp": 1751328608.080214,
+    "date": "30/06/2025, 17:10:08"
+  },
+  {
+    "age": "99",
+    "gender": "male",
+    "symptoms": [],
+    "medical_history": [
+      "diabetes"
+    ],
+    "risk_factors": [],
+    "facial_analysis": null,
+    "timestamp": 1751328621.2906399,
+    "date": "30/06/2025, 17:10:21"
+  },
+  {
+    "age": "99",
+    "gender": "male",
+    "symptoms": [
+      "fatigue",
+      "hot_skin"
+    ],
+    "medical_history": [],
+    "risk_factors": [],
+    "facial_analysis": null,
+    "timestamp": 1751328720.5570931,
+    "date": "30/06/2025, 17:12:00"
+  },
+  {
+    "age": "99",
     "gender": "male",
     "symptoms": [
       "headache",
@@ -107,60 +89,75 @@
       "nausea",
       "vomiting",
       "muscle_cramps",
-      "weakness",
       "fatigue",
       "hot_skin"
     ],
     "medical_history": [
       "cardiovascular_disease",
+      "diabetes",
       "obesity",
       "elderly",
-      "heat_sensitive_medications",
-      "alcohol_use",
-      "previous_heat_illness",
-      "poor_heat_acclimation",
-      "prolonged_exertion"
+      "heat_sensitive_medications"
     ],
     "risk_factors": [
       "high_blood_pressure",
       "diabetes",
       "smoking",
-      "obesity"
+      "obesity",
+      "family_history",
+      "physical_inactivity",
+      "high_cholesterol",
+      "atrial_fibrillation"
     ],
     "facial_analysis": null,
-    "timestamp": 1751319561.040084,
-    "date": "30/06/2025, 14:39:21"
+    "timestamp": 1751328747.7513468,
+    "date": "30/06/2025, 17:12:27"
+  },
+  {
+    "age": "99",
+    "gender": "male",
+    "symptoms": [
+      "dizziness",
+      "nausea"
+    ],
+    "medical_history": [],
+    "risk_factors": [],
+    "facial_analysis": null,
+    "timestamp": 1751328982.558305,
+    "date": "30/06/2025, 17:16:22"
+  },
+  {
+    "age": "88",
+    "gender": "female",
+    "symptoms": [
+      "headache",
+      "dizziness",
+      "nausea",
+      "vomiting",
+      "muscle_cramps"
+    ],
+    "medical_history": [
+      "cardiovascular_disease",
+      "diabetes",
+      "obesity",
+      "elderly",
+      "heat_sensitive_medications"
+    ],
+    "risk_factors": [],
+    "facial_analysis": null,
+    "timestamp": 1751329105.896887,
+    "date": "30/06/2025, 17:18:25"
   },
   {
     "age": "99",
     "gender": "female",
     "symptoms": [
-      "headache",
-      "muscle_cramps"
+      "headache"
     ],
     "medical_history": [],
-    "risk_factors": [
-      "smoking",
-      "obesity"
-    ],
+    "risk_factors": [],
     "facial_analysis": null,
-    "timestamp": 1751319974.844649,
-    "date": "30/06/2025, 14:46:14"
-  },
-  {
-    "age": "99",
-    "gender": "female",
-    "symptoms": [
-      "headache",
-      "muscle_cramps"
-    ],
-    "medical_history": [],
-    "risk_factors": [
-      "smoking",
-      "obesity"
-    ],
-    "facial_analysis": null,
-    "timestamp": 1751320004.678305,
-    "date": "30/06/2025, 14:46:44"
+    "timestamp": 1751329221.968201,
+    "date": "30/06/2025, 17:20:21"
   }
 ]

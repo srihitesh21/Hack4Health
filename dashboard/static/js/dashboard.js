@@ -198,6 +198,16 @@ function initializeCharts() {
 
 function setupEventListeners() {
     // Connect button
+    
+    // Test Sunstroke button
+    const testSunstrokeBtn = document.getElementById('testSunstrokeBtn');
+    console.log('🔍 Looking for testSunstrokeBtn:', testSunstrokeBtn);
+    if (testSunstrokeBtn) {
+        console.log('✅ Test Sunstroke button found, adding event listener');
+        testSunstrokeBtn.addEventListener('click', runSunstrokeTest);
+    } else {
+        console.error('❌ Test Sunstroke button not found!');
+    }
     connectBtn.addEventListener('click', function() {
         socket.emit('connect_arduino');
         this.disabled = true;
@@ -1084,6 +1094,9 @@ function updateHeatstrokeRiskDisplay(result) {
         }
     }
     
+    // Update detailed heatstroke section
+    updateDetailedHeatstrokeDisplay(result);
+    
     // Show notification with more details
     const notificationText = `Heatstroke Risk: ${riskLevel} (${(probability * 100).toFixed(1)}%)`;
     showNotification(notificationText, isHighRisk ? 'warning' : 'info');
@@ -1095,6 +1108,277 @@ function updateHeatstrokeRiskDisplay(result) {
         risk_level: riskLevel,
         features_used: result.features_used || [],
         feature_values: result.feature_values || {}
+    });
+}
+
+function updateDetailedHeatstrokeDisplay(result) {
+    const isHighRisk = result.heatstroke_prediction;
+    const probability = result.heatstroke_probability || result.probability || 0;
+    const riskLevel = result.risk_level || (isHighRisk ? 'HIGH' : (probability > 0.3 ? 'MODERATE' : 'LOW'));
+    
+    // Update Risk Summary
+    const riskLevelElement = document.getElementById('detailed-risk-level');
+    const riskProbabilityElement = document.getElementById('detailed-risk-probability');
+    const riskPredictionElement = document.getElementById('detailed-risk-prediction');
+    
+    if (riskLevelElement) {
+        riskLevelElement.textContent = riskLevel;
+        riskLevelElement.style.color = isHighRisk ? '#dc3545' : (probability > 0.3 ? '#f57c00' : '#28a745');
+    }
+    
+    if (riskProbabilityElement) {
+        riskProbabilityElement.textContent = `${(probability * 100).toFixed(1)}% Probability`;
+    }
+    
+    if (riskPredictionElement) {
+        riskPredictionElement.textContent = isHighRisk ? 'HIGH RISK DETECTED' : 'LOW RISK';
+        riskPredictionElement.style.color = isHighRisk ? '#dc3545' : '#28a745';
+    }
+    
+    // Update Key Risk Factors
+    const keyFeaturesList = document.getElementById('key-features-list');
+    if (keyFeaturesList && result.feature_values) {
+        const activeFeatures = Object.entries(result.feature_values)
+            .filter(([key, value]) => value !== 0 && value !== '0')
+            .sort((a, b) => b[1] - a[1]); // Sort by value descending
+        
+        if (activeFeatures.length > 0) {
+            keyFeaturesList.innerHTML = activeFeatures.map(([feature, value]) => `
+                <div class="feature-item">
+                    <span class="feature-name">${formatFeatureName(feature)}</span>
+                    <span class="feature-value">${value}</span>
+                </div>
+            `).join('');
+        } else {
+            keyFeaturesList.innerHTML = '<div class="text-muted">No significant risk factors detected</div>';
+        }
+    }
+    
+    // Update Input Data
+    const inputDataDisplay = document.getElementById('input-data-display');
+    if (inputDataDisplay) {
+        const healthData = JSON.parse(localStorage.getItem('healthAssessmentData') || '{}');
+        
+        // Get BPM data asynchronously
+        getCurrentBPMData().then(bpmData => {
+            inputDataDisplay.innerHTML = `
+                <div class="input-data-item">
+                    <span class="input-data-label">Age:</span>
+                    <span class="input-data-value">${healthData.age || 'N/A'} years</span>
+                </div>
+                <div class="input-data-item">
+                    <span class="input-data-label">Gender:</span>
+                    <span class="input-data-value">${healthData.gender || 'N/A'}</span>
+                </div>
+                <div class="input-data-item">
+                    <span class="input-data-label">Heart Rate:</span>
+                    <span class="input-data-value">${bpmData.bpm || 'N/A'} BPM</span>
+                </div>
+                <div class="input-data-item">
+                    <span class="input-data-label">Skin Temp:</span>
+                    <span class="input-data-value">${bpmData.skin_temperature || 'N/A'}°C</span>
+                </div>
+                <div class="input-data-item">
+                    <span class="input-data-label">Symptoms:</span>
+                    <span class="input-data-value">${(healthData.symptoms || []).length} reported</span>
+                </div>
+                <div class="input-data-item">
+                    <span class="input-data-label">Risk Factors:</span>
+                    <span class="input-data-value">${(healthData.risk_factors || []).length} identified</span>
+                </div>
+            `;
+        }).catch(error => {
+            console.warn('Could not get BPM data for display:', error);
+            // Fallback display without BPM data
+            inputDataDisplay.innerHTML = `
+                <div class="input-data-item">
+                    <span class="input-data-label">Age:</span>
+                    <span class="input-data-value">${healthData.age || 'N/A'} years</span>
+                </div>
+                <div class="input-data-item">
+                    <span class="input-data-label">Gender:</span>
+                    <span class="input-data-value">${healthData.gender || 'N/A'}</span>
+                </div>
+                <div class="input-data-item">
+                    <span class="input-data-label">Heart Rate:</span>
+                    <span class="input-data-value">N/A</span>
+                </div>
+                <div class="input-data-item">
+                    <span class="input-data-label">Skin Temp:</span>
+                    <span class="input-data-value">N/A</span>
+                </div>
+                <div class="input-data-item">
+                    <span class="input-data-label">Symptoms:</span>
+                    <span class="input-data-value">${(healthData.symptoms || []).length} reported</span>
+                </div>
+                <div class="input-data-item">
+                    <span class="input-data-label">Risk Factors:</span>
+                    <span class="input-data-value">${(healthData.risk_factors || []).length} identified</span>
+                </div>
+            `;
+        });
+    }
+    
+    // Update Recommendations
+    const recommendationsElement = document.getElementById('heatstroke-recommendations');
+    if (recommendationsElement) {
+        const recommendations = generateHeatstrokeRecommendations(isHighRisk, probability, riskLevel);
+        recommendationsElement.innerHTML = recommendations.map(rec => `
+            <div class="recommendation-item ${rec.priority}">
+                <i class="fas ${rec.icon}"></i> ${rec.text}
+            </div>
+        `).join('');
+    }
+}
+
+function formatFeatureName(feature) {
+    return feature
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, l => l.toUpperCase())
+        .replace('Blood Pressure Systolic', 'Systolic BP')
+        .replace('Blood Pressure Diastolic', 'Diastolic BP')
+        .replace('Heat Sensitive Medications', 'Heat-Sensitive Meds')
+        .replace('Previous Heat Illness', 'Previous Heat Issues')
+        .replace('Poor Heat Acclimation', 'Poor Heat Adaptation')
+        .replace('Prolonged Exertion', 'Long Exercise');
+}
+
+function generateHeatstrokeRecommendations(isHighRisk, probability, riskLevel) {
+    const recommendations = [];
+    
+    if (isHighRisk || probability > 0.7) {
+        recommendations.push({
+            priority: 'urgent',
+            icon: 'fa-exclamation-triangle',
+            text: 'IMMEDIATE ACTION REQUIRED: Seek medical attention immediately'
+        });
+        recommendations.push({
+            priority: 'urgent',
+            icon: 'fa-thermometer-half',
+            text: 'Move to a cool environment and remove excess clothing'
+        });
+        recommendations.push({
+            priority: 'urgent',
+            icon: 'fa-tint',
+            text: 'Hydrate with cool water and electrolyte solutions'
+        });
+    } else if (probability > 0.3) {
+        recommendations.push({
+            priority: 'moderate',
+            icon: 'fa-exclamation-circle',
+            text: 'Monitor symptoms closely and avoid heat exposure'
+        });
+        recommendations.push({
+            priority: 'moderate',
+            icon: 'fa-umbrella-beach',
+            text: 'Stay in air-conditioned or shaded areas'
+        });
+        recommendations.push({
+            priority: 'moderate',
+            icon: 'fa-tint',
+            text: 'Increase fluid intake and avoid strenuous activity'
+        });
+    } else {
+        recommendations.push({
+            priority: 'low',
+            icon: 'fa-check-circle',
+            text: 'Continue normal activities with standard heat precautions'
+        });
+        recommendations.push({
+            priority: 'low',
+            icon: 'fa-tint',
+            text: 'Maintain adequate hydration throughout the day'
+        });
+    }
+    
+    // Add general recommendations
+    recommendations.push({
+        priority: 'low',
+        icon: 'fa-clock',
+        text: 'Avoid outdoor activities during peak heat hours (10 AM - 4 PM)'
+    });
+    
+    return recommendations;
+}
+
+async function runSunstrokeTest() {
+    console.log('🔍 Test for Sunstroke button clicked!');
+    
+    const button = document.getElementById('testSunstrokeBtn');
+    if (!button) {
+        console.error('❌ Button not found!');
+        showNotification('❌ Button not found!', 'error');
+        return;
+    }
+    
+    const originalText = button.innerHTML;
+    console.log('📝 Original button text:', originalText);
+    
+    // Disable button and show loading
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Running Test...';
+    console.log('⏳ Button disabled and loading...');
+    
+    try {
+        console.log('🌐 Calling API endpoint...');
+        // Call the API endpoint
+        const response = await fetch('/api/test_sunstroke', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        console.log('📡 Response status:', response.status);
+        const result = await response.json();
+        console.log('📋 API Response:', result);
+        
+        if (result.success) {
+            // Show success notification
+            showNotification('☀️ Sunstroke test completed successfully! Results updated on dashboard.', 'success');
+            console.log('✅ Success notification shown');
+            
+            // Update the dashboard display directly instead of showing modal
+            // The API returns the same data that would be displayed in terminal
+            // We'll parse it and update the dashboard sections
+            
+            // Try to get the latest heatstroke prediction to update the display
+            console.log('🔄 Getting latest heatstroke prediction...');
+            const latestResponse = await fetch('/api/latest_heatstroke_prediction');
+            if (latestResponse.ok) {
+                const latestData = await latestResponse.json();
+                if (latestData.success) {
+                    updateHeatstrokeRiskDisplay(latestData.prediction);
+                    console.log('✅ Dashboard updated with latest heatstroke prediction');
+                }
+            }
+            
+            // Also log the terminal output to console for debugging
+            console.log('📋 Terminal Output:', result.output);
+            
+        } else {
+            console.error('❌ API returned error:', result.error);
+            showNotification('❌ Sunstroke test failed: ' + (result.error || 'Unknown error'), 'error');
+        }
+        
+    } catch (error) {
+        console.error('❌ Sunstroke test error:', error);
+        showNotification('❌ Sunstroke test failed: ' + error.message, 'error');
+    } finally {
+        // Re-enable button
+        button.disabled = false;
+        button.innerHTML = originalText;
+        console.log('🔄 Button re-enabled');
+    }
+}
+
+// Modal function removed - results now display directly on dashboard
+
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(function() {
+        showNotification('📋 Output copied to clipboard!', 'success');
+    }, function(err) {
+        showNotification('❌ Failed to copy to clipboard', 'error');
     });
 }
 

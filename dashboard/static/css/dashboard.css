@@ -977,4 +977,222 @@ body {
     background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%);
     color: #388e3c;
     border-left: 4px solid #4caf50;
+}
+
+/* Detailed Heatstroke Section Styles */
+.heatstroke-detailed-card {
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.05) 0%, rgba(255, 152, 0, 0.05) 100%);
+    border: 2px solid rgba(255, 193, 7, 0.2);
+    border-radius: 15px;
+    box-shadow: 0 8px 32px rgba(255, 193, 7, 0.1);
+}
+
+.heatstroke-detailed-card .card-header {
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.1) 0%, rgba(255, 152, 0, 0.1) 100%);
+    border-bottom: 2px solid rgba(255, 193, 7, 0.3);
+    border-radius: 13px 13px 0 0;
+}
+
+.heatstroke-detailed-card .card-header h5 {
+    color: #f57c00;
+    font-weight: 600;
+    margin: 0;
+}
+
+.heatstroke-detailed-card .card-header h5 i {
+    color: #ff9800;
+    margin-right: 8px;
+}
+
+.heatstroke-summary-card,
+.heatstroke-features-card,
+.heatstroke-data-card {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 10px;
+    padding: 15px;
+    border: 1px solid rgba(255, 193, 7, 0.2);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    height: 100%;
+}
+
+.heatstroke-summary-card h6,
+.heatstroke-features-card h6,
+.heatstroke-data-card h6 {
+    color: #f57c00;
+    font-weight: 600;
+    margin-bottom: 15px;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.risk-summary {
+    text-align: center;
+}
+
+.risk-level {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #dc3545;
+    margin-bottom: 5px;
+}
+
+.risk-probability {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #f57c00;
+    margin-bottom: 10px;
+}
+
+.risk-prediction {
+    font-size: 0.9rem;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.features-list {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.feature-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    background: rgba(255, 193, 7, 0.1);
+    border-radius: 6px;
+    border-left: 3px solid #ff9800;
+}
+
+.feature-name {
+    font-weight: 500;
+    color: #495057;
+    font-size: 0.85rem;
+}
+
+.feature-value {
+    font-weight: 600;
+    color: #dc3545;
+    background: rgba(220, 53, 69, 0.1);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+}
+
+.input-data {
+    font-size: 0.85rem;
+    line-height: 1.4;
+}
+
+.input-data-item {
+    margin-bottom: 8px;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.input-data-label {
+    font-weight: 600;
+    color: #495057;
+    margin-right: 8px;
+}
+
+.input-data-value {
+    color: #6c757d;
+}
+
+.heatstroke-recommendations {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 10px;
+    padding: 15px;
+    border: 1px solid rgba(255, 193, 7, 0.2);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.heatstroke-recommendations h6 {
+    color: #f57c00;
+    font-weight: 600;
+    margin-bottom: 15px;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.recommendations-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.recommendation-item {
+    padding: 10px 12px;
+    background: rgba(255, 193, 7, 0.1);
+    border-radius: 6px;
+    border-left: 3px solid #ff9800;
+    font-size: 0.85rem;
+    line-height: 1.4;
+}
+
+.recommendation-item.urgent {
+    background: rgba(220, 53, 69, 0.1);
+    border-left-color: #dc3545;
+    color: #721c24;
+}
+
+.recommendation-item.moderate {
+    background: rgba(255, 193, 7, 0.1);
+    border-left-color: #ff9800;
+    color: #856404;
+}
+
+.recommendation-item.low {
+    background: rgba(40, 167, 69, 0.1);
+    border-left-color: #28a745;
+    color: #155724;
+}
+
+/* Test Sunstroke button styling */
+#testSunstrokeBtn {
+    background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+    border: none;
+    color: white;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(238, 90, 36, 0.3);
+}
+
+#testSunstrokeBtn:hover {
+    background: linear-gradient(45deg, #ee5a24, #ff6b6b);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(238, 90, 36, 0.4);
+}
+
+#testSunstrokeBtn:disabled {
+    background: #6c757d;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Modal styling for sunstroke test results */
+#sunstrokeTestModal .modal-content {
+    border: none;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+#sunstrokeTestModal .modal-header {
+    background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+    color: white;
+    border-bottom: none;
+}
+
+#sunstrokeTestModal .modal-title {
+    font-weight: bold;
+}
+
+#sunstrokeTestModal pre {
+    border: 1px solid #dee2e6;
+    background-color: #f8f9fa;
+    color: #495057;
+    line-height: 1.4;
 } 

@@ -719,4 +719,633 @@ body {
 /* Risk Factors Section */
 .form-section h4 .text-danger {
     color: #dc3545 !important;
+}
+
+/* Computer Vision & Facial Analysis */
+.camera-container {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    border: 2px dashed #dee2e6;
+    text-align: center;
+}
+
+.camera-container video {
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    background: #000;
+}
+
+.camera-controls {
+    margin-top: 15px;
+}
+
+.camera-controls .btn {
+    margin: 5px;
+    padding: 8px 16px;
+    font-size: 0.9rem;
+}
+
+.analysis-item {
+    margin-bottom: 15px;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #007bff;
+}
+
+.analysis-item label {
+    font-weight: 600;
+    color: #495057;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.analysis-item .progress {
+    height: 8px;
+    margin: 5px 0;
+    background-color: #e9ecef;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.analysis-item .progress-bar {
+    background: linear-gradient(90deg, #28a745, #ffc107, #dc3545);
+    transition: width 0.6s ease;
+}
+
+.analysis-item span {
+    font-weight: 600;
+    color: #007bff;
+    font-size: 0.9rem;
+}
+
+#emotionResult, #eyeOpenness, #mouthPosition, #healthScore {
+    font-weight: 600;
+    padding: 5px 10px;
+    border-radius: 4px;
+    background: #e9ecef;
+    color: #495057;
+    display: inline-block;
+    min-width: 80px;
+    text-align: center;
+}
+
+#emotionResult.happy { background: #d4edda; color: #155724; }
+#emotionResult.sad { background: #f8d7da; color: #721c24; }
+#emotionResult.stressed { background: #fff3cd; color: #856404; }
+#emotionResult.neutral { background: #e2e3e5; color: #383d41; }
+
+#eyeOpenness.closed { background: #f8d7da; color: #721c24; }
+#eyeOpenness.half { background: #fff3cd; color: #856404; }
+#eyeOpenness.normal { background: #d4edda; color: #155724; }
+
+#mouthPosition.tight { background: #f8d7da; color: #721c24; }
+#mouthPosition.relaxed { background: #d4edda; color: #155724; }
+#mouthPosition.open { background: #fff3cd; color: #856404; }
+
+#healthScore.excellent { background: #d4edda; color: #155724; }
+#healthScore.good { background: #d1ecf1; color: #0c5460; }
+#healthScore.fair { background: #fff3cd; color: #856404; }
+#healthScore.poor { background: #f8d7da; color: #721c24; }
+
+#cameraInstructions .alert {
+    border-radius: 8px;
+    border-left: 4px solid #17a2b8;
+}
+
+#cameraInstructions ul {
+    margin-bottom: 0;
+    padding-left: 20px;
+}
+
+#cameraInstructions li {
+    margin-bottom: 5px;
+    color: #495057;
+}
+
+/* Camera permission states */
+.camera-container.permission-denied {
+    border-color: #dc3545;
+    background: #f8d7da;
+}
+
+.camera-container.permission-denied::before {
+    content: "Camera access denied. Please allow camera permissions.";
+    display: block;
+    color: #721c24;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.camera-container.loading {
+    border-color: #ffc107;
+    background: #fff3cd;
+}
+
+.camera-container.loading::before {
+    content: "Loading camera...";
+    display: block;
+    color: #856404;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+/* Facial Analysis Summary in Stored Data */
+.facial-analysis-summary {
+    margin-top: 10px;
+    padding: 8px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border-left: 3px solid #17a2b8;
+}
+
+.facial-analysis-summary .badge {
+    margin: 2px;
+    font-size: 0.75rem;
+    padding: 4px 8px;
+}
+
+.badge-success { background-color: #28a745; color: white; }
+.badge-warning { background-color: #ffc107; color: #212529; }
+.badge-danger { background-color: #dc3545; color: white; }
+.badge-info { background-color: #17a2b8; color: white; }
+
+/* Heatstroke Card Styles */
+.heatstroke-card {
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.1) 0%, rgba(255, 152, 0, 0.1) 100%);
+    border: 2px solid rgba(255, 193, 7, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.heatstroke-card:hover {
+    border-color: rgba(255, 193, 7, 0.6);
+    box-shadow: 0 12px 40px rgba(255, 193, 7, 0.2);
+}
+
+.heatstroke-card .card-title {
+    color: #f57c00;
+    font-weight: 600;
+}
+
+.heatstroke-card .card-title i {
+    color: #ff9800;
+    animation: pulse 2s infinite;
+}
+
+.heatstroke-card .value {
+    color: #f57c00;
+    font-weight: 700;
+    font-size: 1.1rem;
+    line-height: 1.2;
+    white-space: pre-line;
+    text-align: center;
+}
+
+/* High risk heatstroke animation */
+.heatstroke-card.high-risk {
+    animation: heatstrokeAlert 3s infinite;
+    border-color: #dc3545;
+    box-shadow: 0 0 20px rgba(220, 53, 69, 0.5);
+    background: linear-gradient(135deg, rgba(220, 53, 69, 0.1) 0%, rgba(200, 35, 51, 0.1) 100%);
+}
+
+.heatstroke-card.high-risk .card-title i {
+    animation: heatstrokePulse 1s infinite;
+}
+
+@keyframes heatstrokeAlert {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+}
+
+@keyframes heatstrokePulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.2); opacity: 0.7; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.heatstroke-card .btn-outline-danger {
+    border-color: #ff5722;
+    color: #ff5722;
+    background: transparent;
+    transition: all 0.3s ease;
+}
+
+.heatstroke-card .btn-outline-danger:hover {
+    background: #ff5722;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 87, 34, 0.3);
+}
+
+.heatstroke-card .btn-outline-danger:disabled {
+    opacity: 0.6;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Risk indicator for heatstroke */
+.risk-indicator.moderate-risk {
+    background: linear-gradient(45deg, #ff9800, #ff5722);
+    animation: pulse 1.5s infinite;
+}
+
+/* Notification styles */
+.alert {
+    border-radius: 10px;
+    border: none;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.alert-info {
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    color: #1976d2;
+    border-left: 4px solid #2196f3;
+}
+
+.alert-danger {
+    background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+    color: #d32f2f;
+    border-left: 4px solid #f44336;
+}
+
+.alert-success {
+    background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%);
+    color: #388e3c;
+    border-left: 4px solid #4caf50;
+}
+
+/* Detailed Heatstroke Section Styles */
+.heatstroke-detailed-card {
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.05) 0%, rgba(255, 152, 0, 0.05) 100%);
+    border: 2px solid rgba(255, 193, 7, 0.2);
+    border-radius: 15px;
+    box-shadow: 0 8px 32px rgba(255, 193, 7, 0.1);
+}
+
+.heatstroke-detailed-card .card-header {
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.1) 0%, rgba(255, 152, 0, 0.1) 100%);
+    border-bottom: 2px solid rgba(255, 193, 7, 0.3);
+    border-radius: 13px 13px 0 0;
+}
+
+.heatstroke-detailed-card .card-header h5 {
+    color: #f57c00;
+    font-weight: 600;
+    margin: 0;
+}
+
+.heatstroke-detailed-card .card-header h5 i {
+    color: #ff9800;
+    margin-right: 8px;
+}
+
+.heatstroke-summary-card,
+.heatstroke-features-card,
+.heatstroke-data-card {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 10px;
+    padding: 15px;
+    border: 1px solid rgba(255, 193, 7, 0.2);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    height: 100%;
+}
+
+.heatstroke-summary-card h6,
+.heatstroke-features-card h6,
+.heatstroke-data-card h6 {
+    color: #f57c00;
+    font-weight: 600;
+    margin-bottom: 15px;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.risk-summary {
+    text-align: center;
+}
+
+.risk-level {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #dc3545;
+    margin-bottom: 5px;
+}
+
+.risk-probability {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #f57c00;
+    margin-bottom: 10px;
+}
+
+.risk-prediction {
+    font-size: 0.9rem;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.features-list {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.feature-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    background: rgba(255, 193, 7, 0.1);
+    border-radius: 6px;
+    border-left: 3px solid #ff9800;
+}
+
+.feature-name {
+    font-weight: 500;
+    color: #495057;
+    font-size: 0.85rem;
+}
+
+.feature-value {
+    font-weight: 600;
+    color: #dc3545;
+    background: rgba(220, 53, 69, 0.1);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+}
+
+.input-data {
+    font-size: 0.85rem;
+    line-height: 1.4;
+}
+
+.input-data-item {
+    margin-bottom: 8px;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.input-data-label {
+    font-weight: 600;
+    color: #495057;
+    margin-right: 8px;
+}
+
+.input-data-value {
+    color: #6c757d;
+}
+
+.heatstroke-recommendations {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 10px;
+    padding: 15px;
+    border: 1px solid rgba(255, 193, 7, 0.2);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.heatstroke-recommendations h6 {
+    color: #f57c00;
+    font-weight: 600;
+    margin-bottom: 15px;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.recommendations-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.recommendation-item {
+    padding: 10px 12px;
+    background: rgba(255, 193, 7, 0.1);
+    border-radius: 6px;
+    border-left: 3px solid #ff9800;
+    font-size: 0.85rem;
+    line-height: 1.4;
+}
+
+.recommendation-item.urgent {
+    background: rgba(220, 53, 69, 0.1);
+    border-left-color: #dc3545;
+    color: #721c24;
+}
+
+.recommendation-item.moderate {
+    background: rgba(255, 193, 7, 0.1);
+    border-left-color: #ff9800;
+    color: #856404;
+}
+
+.recommendation-item.low {
+    background: rgba(40, 167, 69, 0.1);
+    border-left-color: #28a745;
+    color: #155724;
+}
+
+/* Test Sunstroke button styling */
+#testSunstrokeBtn {
+    background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+    border: none;
+    color: white;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(238, 90, 36, 0.3);
+}
+
+#testSunstrokeBtn:hover {
+    background: linear-gradient(45deg, #ee5a24, #ff6b6b);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(238, 90, 36, 0.4);
+}
+
+#testSunstrokeBtn:disabled {
+    background: #6c757d;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Modal styling for sunstroke test results */
+#sunstrokeTestModal .modal-content {
+    border: none;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+#sunstrokeTestModal .modal-header {
+    background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+    color: white;
+    border-bottom: none;
+}
+
+#sunstrokeTestModal .modal-title {
+    font-weight: bold;
+}
+
+#sunstrokeTestModal pre {
+    border: 1px solid #dee2e6;
+    background-color: #f8f9fa;
+    color: #495057;
+    line-height: 1.4;
+}
+
+/* Heatstroke Prediction Card Styles (matching demographics format) */
+.prediction-card {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.prediction-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+}
+
+.prediction-header h5 {
+    color: #2c3e50;
+    font-weight: 600;
+    margin: 0;
+    font-size: 1.3rem;
+}
+
+.prediction-status {
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.prediction-status.low-risk {
+    background: rgba(39, 174, 96, 0.2);
+    color: #27ae60;
+    border: 1px solid rgba(39, 174, 96, 0.3);
+}
+
+.prediction-status.moderate-risk {
+    background: rgba(243, 156, 18, 0.2);
+    color: #f39c12;
+    border: 1px solid rgba(243, 156, 18, 0.3);
+}
+
+.prediction-status.high-risk {
+    background: rgba(231, 76, 60, 0.2);
+    color: #e74c3c;
+    border: 1px solid rgba(231, 76, 60, 0.3);
+    animation: heatstrokeAlert 2s infinite;
+}
+
+.prediction-details {
+    margin-bottom: 25px;
+}
+
+.prediction-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.prediction-item:last-child {
+    border-bottom: none;
+}
+
+.prediction-item .label {
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 1rem;
+}
+
+.prediction-item .value {
+    font-weight: 700;
+    color: #34495e;
+    font-size: 1.1rem;
+}
+
+.prediction-recommendations {
+    background: rgba(248, 249, 250, 0.8);
+    border-radius: 10px;
+    padding: 20px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.prediction-recommendations h6 {
+    color: #2c3e50;
+    font-weight: 600;
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+}
+
+.prediction-recommendations ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.prediction-recommendations li {
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    color: #34495e;
+    font-size: 0.95rem;
+    position: relative;
+    padding-left: 20px;
+}
+
+.prediction-recommendations li:before {
+    content: "•";
+    color: #3498db;
+    font-weight: bold;
+    position: absolute;
+    left: 0;
+}
+
+.prediction-recommendations li:last-child {
+    border-bottom: none;
 } 
+
+/* BPM Data Display */
+.bpm-data {
+    margin-top: 20px;
+}
+
+.bpm-data .prediction-card {
+    background: linear-gradient(135deg, rgba(52, 152, 219, 0.1) 0%, rgba(41, 128, 185, 0.1) 100%);
+    border: 2px solid rgba(52, 152, 219, 0.3);
+}
+
+.bpm-data .prediction-card:hover {
+    border-color: rgba(52, 152, 219, 0.6);
+    box-shadow: 0 12px 40px rgba(52, 152, 219, 0.2);
+}
+
+.bpm-data .prediction-header h5 {
+    color: #2980b9;
+}
+
+.bpm-data .prediction-status.info {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    color: white;
+    animation: pulse 2s infinite;
+}
+
+.bpm-data .prediction-item .value {
+    color: #2980b9;
+    font-weight: 600;
+}

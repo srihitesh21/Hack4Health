@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediaPipe Stress & Fatigue Analysis</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/dashboard.css') }}" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+    <style>
+        .mediapipe-container {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .analysis-header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .analysis-header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .analysis-header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .version-info {
+            background: rgba(255,255,255,0.2);
+            padding: 10px 20px;
+            border-radius: 25px;
+            display: inline-block;
+            margin-top: 15px;
+            font-weight: 600;
+        }
+        
+        .camera-section {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .camera-controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            border-radius: 25px;
+            padding: 12px 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: none;
+        }
+        
+        .btn-success {
+            background: linear-gradient(45deg, #11998e, #38ef7d);
+            border: none;
+        }
+        
+        .btn-warning {
+            background: linear-gradient(45deg, #f093fb, #f5576c);
+            border: none;
+        }
+        
+        .video-container {
+            position: relative;
+            border-radius: 15px;
+            overflow: hidden;
+            background: #000;
+            margin-bottom: 20px;
+        }
+        
+        #videoElement {
+            width: 100%;
+            max-width: 640px;
+            height: auto;
+            display: block;
+        }
+        
+        #canvasElement {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .results-section {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .score-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            margin-bottom: 20px;
+            transition: transform 0.3s ease;
+        }
+        
+        .score-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .score-value {
+            font-size: 3rem;
+            font-weight: 700;
+            margin: 10px 0;
+        }
+        
+        .score-label {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .confidence-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 5px 15px;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+        
+        .recommendations {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 20px;
+        }
+        
+        .recommendation-item {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid #667eea;
+            transition: all 0.3s ease;
+        }
+        
+        .recommendation-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .facial-features {
+            background: #e3f2fd;
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .feature-item {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            border: 2px solid #e3f2fd;
+        }
+        
+        .feature-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #667eea;
+        }
+        
+        .feature-label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-active {
+            background-color: #28a745;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-inactive {
+            background-color: #dc3545;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+        }
+        
+        .alert {
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .real-time-indicator {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            display: inline-block;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="mediapipe-container">
+        <div class="analysis-header">
+            <h1><i class="fas fa-brain"></i> Real-Time Stress & Fatigue Analysis</h1>
+            <p>Advanced facial landmark detection using MediaPipe for accurate health assessment</p>
+            <div class="version-info">
+                <i class="fas fa-microchip"></i> MediaPipe v2.0 | Deep Learning Model
+            </div>
+        </div>
+
+        <div class="camera-section">
+            <h3><i class="fas fa-video"></i> Camera Controls</h3>
+            <div class="camera-controls">
+                <button class="btn btn-primary" onclick="startCamera()">
+                    <i class="fas fa-play"></i> Start Camera
+                </button>
+                <button class="btn btn-warning" onclick="stopCamera()">
+                    <i class="fas fa-stop"></i> Stop Camera
+                </button>
+                <button class="btn btn-success" onclick="startAnalysis()">
+                    <i class="fas fa-brain"></i> Start Analysis
+                </button>
+                <button class="btn btn-warning" onclick="stopAnalysis()">
+                    <i class="fas fa-pause"></i> Stop Analysis
+                </button>
+            </div>
+            
+            <div class="status-display">
+                <p><span class="status-indicator status-inactive" id="cameraStatus"></span>
+                   <span id="cameraStatusText">Camera not started</span></p>
+                <p><span class="status-indicator status-inactive" id="analysisStatus"></span>
+                   <span id="analysisStatusText">Analysis not running</span></p>
+            </div>
+
+            <div class="video-container">
+                <video id="videoElement" autoplay muted></video>
+                <canvas id="canvasElement"></canvas>
+            </div>
+            
+            <div class="real-time-indicator">
+                <i class="fas fa-broadcast-tower"></i> Real-Time Facial Landmark Detection Active
+            </div>
+        </div>
+
+        <div class="loading-spinner" id="loadingSpinner">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Processing facial features...</p>
+        </div>
+
+        <div class="alert alert-danger" id="errorMessage" style="display: none;"></div>
+        <div class="alert alert-success" id="successMessage" style="display: none;"></div>
+
+        <div class="results-section" id="resultsContainer" style="display: none;">
+            <h3><i class="fas fa-chart-line"></i> Analysis Results</h3>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="score-card">
+                        <h4>Stress Level</h4>
+                        <div class="score-value" id="stressScore">0.0</div>
+                        <div class="score-label" id="stressLevelText">Low Stress</div>
+                        <div class="confidence-badge">
+                            Confidence: <span id="stressConfidence">80.0</span>%
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="score-card">
+                        <h4>Fatigue Level</h4>
+                        <div class="score-value" id="fatigueScore">0.0</div>
+                        <div class="score-label" id="fatigueLevelText">Low Fatigue</div>
+                        <div class="confidence-badge">
+                            Confidence: <span id="fatigueConfidence">80.0</span>%
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="results-section" id="detailsContainer" style="display: none;">
+            <h3><i class="fas fa-info-circle"></i> Analysis Details</h3>
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Model Version:</strong> <span id="modelVersion">2.0</span></p>
+                    <p><strong>Analysis Method:</strong> <span id="analysisMethod">MediaPipe Facial Landmarks + Deep Learning</span></p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Last Analysis:</strong> <span id="analysisTimestamp">-</span></p>
+                    <p><strong>Processing Time:</strong> <span id="processingTime">-</span></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="facial-features" id="facialFeaturesContainer" style="display: none;">
+            <h3><i class="fas fa-eye"></i> Extracted Facial Features</h3>
+            <p>Real-time facial landmark analysis using MediaPipe</p>
+            <div class="feature-grid" id="facialFeaturesGrid"></div>
+        </div>
+
+        <div class="recommendations" id="recommendationsContainer" style="display: none;">
+            <h3><i class="fas fa-lightbulb"></i> Personalized Recommendations</h3>
+            <div id="recommendationsList"></div>
+        </div>
+    </div>
+
+    <script>
+        let videoStream = null;
+        let isAnalysisRunning = false;
+        let analysisInterval = null;
+        let faceMesh = null;
+        let camera = null;
+        let canvasCtx = null;
+        let lastAnalysisTime = 0;
+        
+        // Initialize MediaPipe Face Mesh
+        async function initializeMediaPipe() {
+            try {
+                faceMesh = new FaceMesh({
+                    locateFile: (file) => {
+                        return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
+                    }
+                });
+                
+                faceMesh.setOptions({
+                    maxNumFaces: 1,
+                    refineLandmarks: true,
+                    minDetectionConfidence: 0.5,
+                    minTrackingConfidence: 0.5
+                });
+                
+                faceMesh.onResults(onResults);
+                
+                console.log("✅ MediaPipe Face Mesh initialized");
+                return true;
+            } catch (error) {
+                console.error("❌ Error initializing MediaPipe:", error);
+                return false;
+            }
+        }
+        
+        // Handle MediaPipe results
+        function onResults(results) {
+            if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
+                // Draw landmarks on canvas
+                drawLandmarks(results);
+                
+                // Extract features and analyze if analysis is running
+                if (isAnalysisRunning) {
+                    extractAndAnalyze(results.multiFaceLandmarks[0]);
+                }
+            }
+        }
+        
+        // Draw facial landmarks on canvas
+        function drawLandmarks(results) {
+            const canvas = document.getElementById('canvasElement');
+            const video = document.getElementById('videoElement');
+            
+            if (!canvasCtx) {
+                canvasCtx = canvas.getContext('2d');
+            }
+            
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            canvasCtx.save();
+            canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+            canvasCtx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
+            
+            if (results.multiFaceLandmarks) {
+                for (const landmarks of results.multiFaceLandmarks) {
+                    drawConnectors(canvasCtx, landmarks, FACEMESH_TESSELATION, {
+                        color: '#C0C0C070',
+                        lineWidth: 1
+                    });
+                    drawConnectors(canvasCtx, landmarks, FACEMESH_RIGHT_EYE, {
+                        color: '#FF3030'
+                    });
+                    drawConnectors(canvasCtx, landmarks, FACEMESH_LEFT_EYE, {
+                        color: '#30FF30'
+                    });
+                    drawConnectors(canvasCtx, landmarks, FACEMESH_FACE_OVAL, {
+                        color: '#E0E0E0'
+                    });
+                    drawConnectors(canvasCtx, landmarks, FACEMESH_LIPS, {
+                        color: '#E0E0E0'
+                    });
+                }
+            }
+            
+            canvasCtx.restore();
+        }
+        
+        // Extract facial features from landmarks and analyze
+        async function extractAndAnalyze(landmarks) {
+            try {
+                const now = Date.now();
+                if (now - lastAnalysisTime < 2000) return; // Limit to every 2 seconds
+                lastAnalysisTime = now;
+                
+                // Extract facial features from landmarks
+                const facialFeatures = extractFacialFeaturesFromLandmarks(landmarks);
+                
+                if (facialFeatures) {
+                    // Send to backend for analysis
+                    await performAnalysis(facialFeatures);
+                }
+            } catch (error) {
+                console.error('Error in facial analysis:', error);
+            }
+        }
+        
+        // Extract facial features from MediaPipe landmarks
+        function extractFacialFeaturesFromLandmarks(landmarks) {
+            try {
+                const video = document.getElementById('videoElement');
+                const width = video.videoWidth;
+                const height = video.videoHeight;
+                
+                // Convert landmarks to pixel coordinates
+                const points = landmarks.map(landmark => ({
+                    x: landmark.x * width,
+                    y: landmark.y * height
+                }));
+                
+                // Extract specific features
+                const features = [];
+                
+                // Eye openness (landmarks 33-46 for left eye, 362-375 for right eye)
+                const leftEyeOpenness = calculateEyeOpenness(points, 'left');
+                const rightEyeOpenness = calculateEyeOpenness(points, 'right');
+                features.push(leftEyeOpenness, rightEyeOpenness);
+                
+                // Brow height (landmarks 70-76 for left brow, 300-306 for right brow)
+                const leftBrowHeight = calculateBrowHeight(points, 'left');
+                const rightBrowHeight = calculateBrowHeight(points, 'right');
+                features.push(leftBrowHeight, rightBrowHeight);
+                
+                // Mouth features (landmarks 13-14 for corners, 17-84 for mouth)
+                const mouthOpenness = calculateMouthOpenness(points);
+                const mouthCornerLeft = calculateMouthCorner(points, 'left');
+                const mouthCornerRight = calculateMouthCorner(points, 'right');
+                features.push(mouthOpenness, mouthCornerLeft, mouthCornerRight);
+                
+                // Jaw and cheek tension
+                const jawTension = calculateJawTension(points);
+                const cheekTension = calculateCheekTension(points);
+                features.push(jawTension, cheekTension);
+                
+                // Asymmetry features
+                const eyeAsymmetry = Math.abs(leftEyeOpenness - rightEyeOpenness);
+                const browAsymmetry = Math.abs(leftBrowHeight - rightBrowHeight);
+                const mouthAsymmetry = Math.abs(mouthCornerLeft - mouthCornerRight);
+                features.push(eyeAsymmetry, browAsymmetry, mouthAsymmetry);
+                
+                // Additional features (simulated for now)
+                const blinkRate = 0.5; // Would need temporal data
+                const pupilDilation = 0.5; // Would need more sophisticated analysis
+                features.push(blinkRate, pupilDilation);
+                
+                return features;
+                
+            } catch (error) {
+                console.error('Error extracting facial features:', error);
+                return null;
+            }
+        }
+        
+        // Calculate eye openness
+        function calculateEyeOpenness(points, eyeSide) {
+            try {
+                let upperLid, lowerLid;
+                
+                if (eyeSide === 'left') {
+                    upperLid = points[33]; // Upper eyelid
+                    lowerLid = points[46]; // Lower eyelid
+                } else {
+                    upperLid = points[362]; // Upper eyelid
+                    lowerLid = points[375]; // Lower eyelid
+                }
+                
+                const distance = Math.sqrt(
+                    Math.pow(upperLid.x - lowerLid.x, 2) + 
+                    Math.pow(upperLid.y - lowerLid.y, 2)
+                );
+                
+                return Math.max(0, Math.min(1, distance / 30.0));
+            } catch (error) {
+                return 0.5;
+            }
+        }
+        
+        // Calculate brow height
+        function calculateBrowHeight(points, browSide) {
+            try {
+                let browPoint, eyePoint;
+                
+                if (browSide === 'left') {
+                    browPoint = points[70]; // Brow center
+                    eyePoint = points[33];  // Left eye center
+                } else {
+                    browPoint = points[300]; // Brow center
+                    eyePoint = points[362];  // Right eye center
+                }
+                
+                const distance = Math.abs(browPoint.y - eyePoint.y);
+                return Math.max(0, Math.min(1, distance / 50.0));
+            } catch (error) {
+                return 0.5;
+            }
+        }
+        
+        // Calculate mouth openness
+        function calculateMouthOpenness(points) {
+            try {
+                const upperLip = points[17]; // Upper lip
+                const lowerLip = points[84]; // Lower lip
+                
+                const distance = Math.sqrt(
+                    Math.pow(upperLip.x - lowerLip.x, 2) + 
+                    Math.pow(upperLip.y - lowerLip.y, 2)
+                );
+                
+                return Math.max(0, Math.min(1, distance / 40.0));
+            } catch (error) {
+                return 0.3;
+            }
+        }
+        
+        // Calculate mouth corner position
+        function calculateMouthCorner(points, cornerSide) {
+            try {
+                const corner = cornerSide === 'left' ? points[13] : points[14];
+                return Math.max(0, Math.min(1, (corner.y - 200) / 200.0));
+            } catch (error) {
+                return 0.5;
+            }
+        }
+        
+        // Calculate jaw tension
+        function calculateJawTension(points) {
+            try {
+                const jawLeft = points[132]; // Left jaw
+                const jawRight = points[146]; // Right jaw
+                
+                const distance = Math.sqrt(
+                    Math.pow(jawLeft.x - jawRight.x, 2) + 
+                    Math.pow(jawLeft.y - jawRight.y, 2)
+                );
+                
+                return Math.max(0, Math.min(1, distance / 150.0));
+            } catch (error) {
+                return 0.4;
+            }
+        }
+        
+        // Calculate cheek tension
+        function calculateCheekTension(points) {
+            try {
+                const cheekLeft = points[123]; // Left cheek
+                const cheekRight = points[131]; // Right cheek
+                
+                const faceCenterX = (cheekLeft.x + cheekRight.x) / 2;
+                const tension = Math.abs(cheekLeft.x - faceCenterX) / 100.0;
+                
+                return Math.max(0, Math.min(1, tension));
+            } catch (error) {
+                return 0.3;
+            }
+        }
+        
+        // Camera functions
+        async function startCamera() {
+            try {
+                if (!faceMesh) {
+                    const initialized = await initializeMediaPipe();
+                    if (!initialized) {
+                        showMessage('Failed to initialize MediaPipe', 'error');
+                        return;
+                    }
+                }
+                
+                const video = document.getElementById('videoElement');
+                
+                camera = new Camera(video, {
+                    onFrame: async () => {
+                        if (faceMesh) {
+                            await faceMesh.send({image: video});
+                        }
+                    },
+                    width: 640,
+                    height: 480
+                });
+                
+                await camera.start();
+                videoStream = camera;
+                updateCameraStatus(true, 'Camera started successfully');
+                showMessage('Camera started successfully!', 'success');
+                
+            } catch (error) {
+                console.error('Error starting camera:', error);
+                updateCameraStatus(false, 'Camera error: ' + error.message);
+                showMessage('Failed to start camera: ' + error.message, 'error');
+            }
+        }
+        
+        function stopCamera() {
+            if (camera) {
+                camera.stop();
+                camera = null;
+                videoStream = null;
+                updateCameraStatus(false, 'Camera stopped');
+            }
+        }
+        
+        function updateCameraStatus(active, text) {
+            const statusIndicator = document.getElementById('cameraStatus');
+            const statusText = document.getElementById('cameraStatusText');
+            
+            statusIndicator.className = 'status-indicator ' + (active ? 'status-active' : 'status-inactive');
+            statusText.textContent = text;
+        }
+        
+        function updateAnalysisStatus(active, text) {
+            const statusIndicator = document.getElementById('analysisStatus');
+            const statusText = document.getElementById('analysisStatusText');
+            
+            statusIndicator.className = 'status-indicator ' + (active ? 'status-active' : 'status-inactive');
+            statusText.textContent = text;
+        }
+        
+        // Analysis functions
+        function startAnalysis() {
+            if (!videoStream) {
+                showMessage('Please start camera first', 'error');
+                return;
+            }
+            
+            isAnalysisRunning = true;
+            updateAnalysisStatus(true, 'Analysis running');
+            showMessage('Real-time analysis started! Processing facial landmarks...', 'success');
+        }
+        
+        function stopAnalysis() {
+            isAnalysisRunning = false;
+            updateAnalysisStatus(false, 'Analysis stopped');
+            showMessage('Analysis stopped', 'success');
+        }
+        
+        async function performAnalysis(facialFeatures) {
+            try {
+                showLoading(true);
+                
+                const startTime = Date.now();
+                
+                // Generate physiological data (in real implementation, this would come from sensors)
+                const physiologicalData = generatePhysiologicalData();
+                const demographicData = {}; // Could be loaded from stored data
+                
+                // Send to API
+                const response = await fetch('/api/mediapipe_analysis', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        facial_data: facialFeatures,
+                        physiological_data: physiologicalData,
+                        demographic_data: demographicData
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    const processingTime = Date.now() - startTime;
+                    displayResults(result, processingTime);
+                    showMessage('Analysis completed successfully!', 'success');
+                } else {
+                    showMessage('Analysis failed: ' + result.error, 'error');
+                }
+                
+            } catch (error) {
+                console.error('Analysis error:', error);
+                showMessage('Analysis error: ' + error.message, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        function generatePhysiologicalData() {
+            return {
+                heart_rate: 70 + Math.random() * 30,
+                hrv: 30 + Math.random() * 50,
+                skin_temperature: 36.5 + Math.random() * 2,
+                respiration_rate: 12 + Math.random() * 8
+            };
+        }
+        
+        function displayResults(result, processingTime) {
+            // Update scores
+            document.getElementById('stressScore').textContent = (result.stress_score * 100).toFixed(1);
+            document.getElementById('fatigueScore').textContent = (result.fatigue_score * 100).toFixed(1);
+            document.getElementById('stressLevelText').textContent = result.stress_level;
+            document.getElementById('fatigueLevelText').textContent = result.fatigue_level;
+            
+            // Update confidence
+            document.getElementById('stressConfidence').textContent = (result.confidence * 100).toFixed(1);
+            document.getElementById('fatigueConfidence').textContent = (result.confidence * 100).toFixed(1);
+            
+            // Update details
+            document.getElementById('modelVersion').textContent = result.model_version;
+            document.getElementById('analysisMethod').textContent = result.analysis_method;
+            document.getElementById('analysisTimestamp').textContent = new Date(result.timestamp).toLocaleString();
+            document.getElementById('processingTime').textContent = processingTime + 'ms';
+            
+            // Display facial features
+            if (result.facial_features && result.facial_features.length > 0) {
+                displayFacialFeatures(result.facial_features);
+            }
+            
+            // Display recommendations
+            if (result.recommendations && result.recommendations.length > 0) {
+                displayRecommendations(result.recommendations);
+            }
+            
+            // Show containers
+            document.getElementById('resultsContainer').style.display = 'block';
+            document.getElementById('detailsContainer').style.display = 'block';
+            document.getElementById('facialFeaturesContainer').style.display = 'block';
+            document.getElementById('recommendationsContainer').style.display = 'block';
+        }
+        
+        function displayFacialFeatures(features) {
+            const grid = document.getElementById('facialFeaturesGrid');
+            grid.innerHTML = '';
+            
+            const featureNames = [
+                'Left Eye Openness', 'Right Eye Openness', 'Left Brow Height', 'Right Brow Height',
+                'Mouth Openness', 'Mouth Corner Left', 'Mouth Corner Right', 'Jaw Tension', 'Cheek Tension',
+                'Eye Asymmetry', 'Brow Asymmetry', 'Mouth Asymmetry', 'Blink Rate', 'Pupil Dilation'
+            ];
+            
+            features.forEach((value, index) => {
+                if (index < featureNames.length) {
+                    const featureItem = document.createElement('div');
+                    featureItem.className = 'feature-item';
+                    featureItem.innerHTML = `
+                        <div class="feature-value">${(value * 100).toFixed(1)}%</div>
+                        <div class="feature-label">${featureNames[index]}</div>
+                    `;
+                    grid.appendChild(featureItem);
+                }
+            });
+        }
+        
+        function displayRecommendations(recommendations) {
+            const list = document.getElementById('recommendationsList');
+            list.innerHTML = '';
+            
+            recommendations.forEach(recommendation => {
+                const item = document.createElement('div');
+                item.className = 'recommendation-item';
+                item.innerHTML = recommendation;
+                list.appendChild(item);
+            });
+        }
+        
+        function showLoading(show) {
+            const spinner = document.getElementById('loadingSpinner');
+            spinner.style.display = show ? 'block' : 'none';
+        }
+        
+        function showMessage(message, type) {
+            const errorDiv = document.getElementById('errorMessage');
+            const successDiv = document.getElementById('successMessage');
+            
+            if (type === 'error') {
+                errorDiv.textContent = message;
+                errorDiv.style.display = 'block';
+                successDiv.style.display = 'none';
+            } else {
+                successDiv.textContent = message;
+                successDiv.style.display = 'block';
+                errorDiv.style.display = 'none';
+            }
+            
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+                successDiv.style.display = 'none';
+            }, 5000);
+        }
+        
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (camera) {
+                camera.stop();
+            }
+        });
+        
+        // Initialize MediaPipe on page load
+        window.addEventListener('load', () => {
+            initializeMediaPipe();
+        });
+    </script>
+</body>
+</html> 

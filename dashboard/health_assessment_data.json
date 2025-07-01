@@ -1,0 +1,121 @@
+[
+  {
+    "age": "99",
+    "gender": "female",
+    "symptoms": [
+      "headache"
+    ],
+    "medical_history": [],
+    "risk_factors": [],
+    "facial_analysis": null,
+    "timestamp": 1751329221.968201,
+    "date": "30/06/2025, 17:20:21"
+  },
+  {
+    "age": "99",
+    "gender": "male",
+    "symptoms": [
+      "vomiting",
+      "muscle_cramps"
+    ],
+    "medical_history": [],
+    "risk_factors": [],
+    "facial_analysis": null,
+    "timestamp": 1751331399.558224,
+    "date": "30/06/2025, 17:56:39"
+  },
+  {
+    "age": "99",
+    "gender": "male",
+    "symptoms": [
+      "muscle_cramps"
+    ],
+    "medical_history": [],
+    "risk_factors": [],
+    "facial_analysis": null,
+    "timestamp": 1751331613.9903638,
+    "date": "30/06/2025, 18:00:13"
+  },
+  {
+    "age": "77",
+    "gender": "female",
+    "symptoms": [
+      "dizziness"
+    ],
+    "medical_history": [],
+    "risk_factors": [],
+    "facial_analysis": null,
+    "timestamp": 1751331821.3129961,
+    "date": "30/06/2025, 18:03:41"
+  },
+  {
+    "age": "",
+    "gender": "",
+    "symptoms": [],
+    "medical_history": [],
+    "risk_factors": [],
+    "facial_analysis": null,
+    "timestamp": 1751331860.341988,
+    "date": "30/06/2025, 18:04:20"
+  },
+  {
+    "age": "",
+    "gender": "",
+    "symptoms": [],
+    "medical_history": [],
+    "risk_factors": [],
+    "facial_analysis": null,
+    "timestamp": 1751331861.86714,
+    "date": "30/06/2025, 18:04:21"
+  },
+  {
+    "age": "99",
+    "gender": "male",
+    "symptoms": [
+      "headache"
+    ],
+    "medical_history": [],
+    "risk_factors": [],
+    "facial_analysis": null,
+    "timestamp": 1751332452.2760892,
+    "date": "30/06/2025, 18:14:12"
+  },
+  {
+    "age": "99",
+    "gender": "male",
+    "symptoms": [
+      "headache"
+    ],
+    "medical_history": [],
+    "risk_factors": [],
+    "facial_analysis": null,
+    "timestamp": 1751332498.104785,
+    "date": "30/06/2025, 18:14:58"
+  },
+  {
+    "age": "88",
+    "gender": "female",
+    "symptoms": [
+      "dizziness",
+      "nausea"
+    ],
+    "medical_history": [],
+    "risk_factors": [],
+    "facial_analysis": null,
+    "timestamp": 1751332612.839373,
+    "date": "30/06/2025, 18:16:52"
+  },
+  {
+    "age": "99",
+    "gender": "male",
+    "symptoms": [
+      "headache",
+      "dizziness"
+    ],
+    "medical_history": [],
+    "risk_factors": [],
+    "facial_analysis": null,
+    "timestamp": 1751333312.934856,
+    "date": "30/06/2025, 18:28:32"
+  }
+]

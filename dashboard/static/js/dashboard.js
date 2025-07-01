@@ -42,6 +42,43 @@ document.addEventListener('DOMContentLoaded', function() {
     setupEventListeners();
     requestInitialData();
     loadCSVAnalysis(); // Load CSV analysis on page load
+    
+    // Setup heatstroke prediction
+    setupHeatstrokePrediction();
+    
+    // Listen for heatstroke prediction updates from demographics page
+    window.addEventListener('storage', function(e) {
+        if (e.key === 'latestHeatstrokePrediction') {
+            try {
+                const prediction = JSON.parse(e.newValue);
+                if (prediction) {
+                    console.log('🔄 Updating homepage with heatstroke prediction:', prediction);
+                    updateDetailedHeatstrokeDisplay(prediction);
+                    console.log('✅ Homepage heatstroke display updated from demographics');
+                }
+            } catch (error) {
+                console.warn('Error parsing heatstroke prediction from storage:', error);
+            }
+        }
+    });
+    
+    // Also check for existing prediction on page load
+    const existingPrediction = localStorage.getItem('latestHeatstrokePrediction');
+    if (existingPrediction) {
+        try {
+            const prediction = JSON.parse(existingPrediction);
+            console.log('📋 Found existing heatstroke prediction on page load:', prediction);
+            updateDetailedHeatstrokeDisplay(prediction);
+        } catch (error) {
+            console.warn('Error parsing existing heatstroke prediction:', error);
+        }
+    }
+    
+    // Listen for custom heatstroke prediction events
+    window.addEventListener('heatstrokePredictionUpdated', function(e) {
+        console.log('🎯 Received heatstroke prediction update event:', e.detail);
+        updateDetailedHeatstrokeDisplay(e.detail);
+    });
 });
 
 function initializeCharts() {
@@ -195,6 +232,39 @@ function initializeCharts() {
 
 function setupEventListeners() {
     // Connect button
+    
+    // Test Sunstroke button
+    const testSunstrokeBtn = document.getElementById('testSunstrokeBtn');
+    console.log('🔍 Looking for testSunstrokeBtn:', testSunstrokeBtn);
+    if (testSunstrokeBtn) {
+        console.log('✅ Test Sunstroke button found, adding event listener');
+        testSunstrokeBtn.addEventListener('click', runSunstrokeTest);
+    } else {
+        console.error('❌ Test Sunstroke button not found!');
+    }
+    
+    // Load Latest Heatstroke button
+    const loadHeatstrokeBtn = document.getElementById('loadHeatstrokeBtn');
+    console.log('🔍 Looking for loadHeatstrokeBtn:', loadHeatstrokeBtn);
+    if (loadHeatstrokeBtn) {
+        console.log('✅ Load Heatstroke button found, adding event listener');
+        loadHeatstrokeBtn.addEventListener('click', function() {
+            const prediction = localStorage.getItem('latestHeatstrokePrediction');
+            if (prediction) {
+                try {
+                    const predictionData = JSON.parse(prediction);
+                    console.log('🔥 Manually loading heatstroke prediction:', predictionData);
+                    updateDetailedHeatstrokeDisplay(predictionData);
+                } catch (error) {
+                    console.error('Error parsing heatstroke prediction:', error);
+                }
+            } else {
+                console.log('No heatstroke prediction found in localStorage');
+            }
+        });
+    } else {
+        console.error('❌ Load Heatstroke button not found!');
+    }
     connectBtn.addEventListener('click', function() {
         socket.emit('connect_arduino');
         this.disabled = true;
@@ -876,3 +946,521 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+
+// Heatstroke Prediction Functions
+function setupHeatstrokePrediction() {
+    const quickHeatstrokeBtn = document.getElementById('quickHeatstrokeBtn');
+    if (quickHeatstrokeBtn) {
+        quickHeatstrokeBtn.addEventListener('click', performQuickHeatstrokePrediction);
+    }
+    
+    // Check if we have health assessment data and show the button
+    checkHealthDataAndUpdateHeatstrokeUI();
+    
+    // Automatically calculate heatstroke risk on page load if we have data
+    setTimeout(() => {
+        autoCalculateHeatstrokeRisk();
+    }, 2000); // Wait 2 seconds for other data to load
+}
+
+function checkHealthDataAndUpdateHeatstrokeUI() {
+    const healthData = JSON.parse(localStorage.getItem('healthAssessmentData') || '{}');
+    const quickHeatstrokeBtn = document.getElementById('quickHeatstrokeBtn');
+    
+    if (healthData.age && healthData.gender && quickHeatstrokeBtn) {
+        quickHeatstrokeBtn.style.display = 'inline-block';
+        quickHeatstrokeBtn.textContent = 'Calculate Heatstroke Risk';
+    }
+}
+
+async function performQuickHeatstrokePrediction() {
+    const button = document.getElementById('quickHeatstrokeBtn');
+    const riskElement = document.getElementById('heatstrokeRisk');
+    const indicatorElement = document.getElementById('heatstrokeIndicator');
+    
+    // Disable button and show loading
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Calculating...';
+    riskElement.textContent = 'Calculating...';
+    
+    try {
+        // Get current health assessment data
+        const healthData = JSON.parse(localStorage.getItem('healthAssessmentData') || '{}');
+        
+        if (!healthData.age || !healthData.gender) {
+            throw new Error('Please complete the health assessment first');
+        }
+        
+        // Get current BPM data
+        const bpmData = await getCurrentBPMData();
+        
+        // Prepare data for prediction
+        const predictionData = {
+            health_data: {
+                age: parseInt(healthData.age),
+                gender: healthData.gender,
+                symptoms: healthData.symptoms || [],
+                medical_history: healthData.medical_history || [],
+                risk_factors: healthData.risk_factors || []
+            },
+            bpm_data: bpmData
+        };
+        
+        // Send prediction request
+        const response = await fetch('/api/heatstroke_prediction', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(predictionData)
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        
+        // Update UI with prediction results
+        updateHeatstrokeRiskDisplay(result);
+        
+    } catch (error) {
+        console.error('Heatstroke prediction error:', error);
+        riskElement.textContent = 'Error';
+        indicatorElement.className = 'risk-indicator high-risk';
+        showNotification('Failed to calculate heatstroke risk: ' + error.message, 'error');
+    } finally {
+        // Re-enable button
+        button.disabled = false;
+        button.innerHTML = '<i class="fas fa-calculator"></i> Calculate';
+    }
+}
+
+async function getCurrentBPMData() {
+    try {
+        // Try to get BPM data from the latest heatstroke prediction API
+        const response = await fetch('/api/latest_heatstroke_prediction');
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.bpm_data) {
+                return {
+                    bpm: data.bpm_data.bpm || 75,
+                    skin_temperature: data.bpm_data.skin_temperature || 36.5,
+                    confidence: data.bpm_data.confidence || 0,
+                    skin_temp_min: data.bpm_data.skin_temp_min || 36.0,
+                    skin_temp_max: data.bpm_data.skin_temp_max || 37.0,
+                    data_source: data.bpm_data.data_source || 'API',
+                    timestamp: data.bpm_data.timestamp
+                };
+            }
+        }
+        
+        // Fallback: Try to get BPM data from the dashboard API
+        const csvResponse = await fetch('/api/csv_analysis');
+        if (csvResponse.ok) {
+            const csvData = await csvResponse.json();
+            return {
+                bpm: csvData.bpm || 75,
+                skin_temperature: csvData.skin_temperature || 36.5,
+                confidence: csvData.confidence || 0,
+                skin_temp_min: csvData.skin_temp_min || 36.0,
+                skin_temp_max: csvData.skin_temp_max || 37.0,
+                data_source: 'CSV Analysis',
+                timestamp: new Date().toISOString()
+            };
+        }
+    } catch (error) {
+        console.warn('Could not fetch BPM data:', error);
+    }
+    
+    // Fallback to default values
+    return {
+        bpm: 75,
+        skin_temperature: 36.5,
+        confidence: 0,
+        skin_temp_min: 36.0,
+        skin_temp_max: 37.0,
+        data_source: 'Default Values',
+        timestamp: new Date().toISOString()
+    };
+}
+
+async function autoCalculateHeatstrokeRisk() {
+    try {
+        console.log('🔄 Auto-calculating heatstroke risk...');
+        
+        // First try to get the latest prediction from stored data
+        const latestResponse = await fetch('/api/latest_heatstroke_prediction');
+        if (latestResponse.ok) {
+            const latestData = await latestResponse.json();
+            if (latestData.success) {
+                updateHeatstrokeRiskDisplay(latestData.prediction);
+                console.log('✅ Auto heatstroke risk loaded from stored data');
+                return;
+            }
+        }
+        
+        // Fallback: Check if we have health assessment data in localStorage
+        const healthData = JSON.parse(localStorage.getItem('healthAssessmentData') || '{}');
+        
+        if (!healthData.age || !healthData.gender) {
+            console.log('No health assessment data available for auto heatstroke calculation');
+            return;
+        }
+        
+        // Get current BPM data
+        const bpmData = await getCurrentBPMData();
+        
+        // Prepare data for prediction
+        const predictionData = {
+            health_data: {
+                age: parseInt(healthData.age),
+                gender: healthData.gender,
+                symptoms: healthData.symptoms || [],
+                medical_history: healthData.medical_history || [],
+                risk_factors: healthData.risk_factors || []
+            },
+            bpm_data: bpmData
+        };
+        
+        // Send prediction request
+        const response = await fetch('/api/heatstroke_prediction', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(predictionData)
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            updateHeatstrokeRiskDisplay(result);
+            console.log('✅ Auto heatstroke risk calculation completed');
+        } else {
+            console.warn('Auto heatstroke calculation failed:', response.status);
+        }
+        
+    } catch (error) {
+        console.warn('Auto heatstroke calculation error:', error);
+    }
+}
+
+function updateHeatstrokeRiskDisplay(result) {
+    const riskElement = document.getElementById('heatstrokeRisk');
+    const indicatorElement = document.getElementById('heatstrokeIndicator');
+    const heatstrokeCard = document.querySelector('.heatstroke-card');
+    
+    const isHighRisk = result.heatstroke_prediction;
+    const probability = result.heatstroke_probability || result.probability || 0;
+    const riskLevel = result.risk_level || (isHighRisk ? 'HIGH' : (probability > 0.3 ? 'MODERATE' : 'LOW'));
+    
+    // Update risk value with percentage
+    if (isHighRisk || probability > 0.7) {
+        riskElement.textContent = `${riskLevel}\n${(probability * 100).toFixed(1)}%`;
+        riskElement.style.color = '#d32f2f';
+        indicatorElement.className = 'risk-indicator high-risk';
+        if (heatstrokeCard) {
+            heatstrokeCard.classList.add('high-risk');
+        }
+    } else if (probability > 0.3) {
+        riskElement.textContent = `${riskLevel}\n${(probability * 100).toFixed(1)}%`;
+        riskElement.style.color = '#f57c00';
+        indicatorElement.className = 'risk-indicator moderate-risk';
+        if (heatstrokeCard) {
+            heatstrokeCard.classList.remove('high-risk');
+        }
+    } else {
+        riskElement.textContent = `${riskLevel}\n${(probability * 100).toFixed(1)}%`;
+        riskElement.style.color = '#388e3c';
+        indicatorElement.className = 'risk-indicator low-risk';
+        if (heatstrokeCard) {
+            heatstrokeCard.classList.remove('high-risk');
+        }
+    }
+    
+    // Update detailed heatstroke section
+    updateDetailedHeatstrokeDisplay(result);
+    
+    // Show notification with more details
+    const notificationText = `Heatstroke Risk: ${riskLevel} (${(probability * 100).toFixed(1)}%)`;
+    showNotification(notificationText, isHighRisk ? 'warning' : 'info');
+    
+    // Log detailed information to console
+    console.log('🔥 Heatstroke Risk Assessment:', {
+        prediction: isHighRisk,
+        probability: probability,
+        risk_level: riskLevel,
+        features_used: result.features_used || [],
+        feature_values: result.feature_values || {}
+    });
+}
+
+function updateDetailedHeatstrokeDisplay(result) {
+    console.log('🎯 updateDetailedHeatstrokeDisplay called with:', result);
+    
+    const isHighRisk = result.heatstroke_prediction;
+    const probability = result.heatstroke_probability || result.probability || 0;
+    const riskLevel = result.risk_level || (isHighRisk ? 'HIGH' : (probability > 0.3 ? 'MODERATE' : 'LOW'));
+    
+    console.log('📊 Parsed values:', { isHighRisk, probability, riskLevel });
+    
+    // Get BPM and skin temperature from the prediction
+    let bpm = result.feature_values?.Heart_Rate;
+    let skinTemp = result.feature_values?.Temperature;
+    
+    // Get additional BPM data if available
+    const bpmData = result.bpm_data || {};
+    const confidence = bpmData.confidence || 0;
+    const skinTempRange = bpmData.skin_temp_min && bpmData.skin_temp_max ? 
+        `${bpmData.skin_temp_min.toFixed(1)}-${bpmData.skin_temp_max.toFixed(1)}°C` : '';
+    const dataSource = bpmData.data_source || 'Model Prediction';
+
+    // Format BPM and skinTemp for display
+    const bpmDisplay = (typeof bpm === 'number' && !isNaN(bpm)) ? `${bpm} BPM${confidence > 0 ? ` (Confidence: ${(confidence * 100).toFixed(1)}%)` : ''}` : '';
+    const skinTempDisplay = (typeof skinTemp === 'number' && !isNaN(skinTemp)) ? `${skinTemp}°C${skinTempRange ? ` (Range: ${skinTempRange})` : ''}` : '';
+    
+    // Generate recommendations based on risk level
+    let recommendations = [];
+    if (riskLevel === 'High' || isHighRisk) {
+        recommendations = [
+            'Immediately move to a cool environment',
+            'Remove excess clothing',
+            'Apply cool water to skin',
+            'Seek immediate medical attention',
+            'Avoid any physical activity'
+        ];
+    } else if (riskLevel === 'Moderate') {
+        recommendations = [
+            'Move to air-conditioned environment',
+            'Stay hydrated with cool water',
+            'Take frequent breaks',
+            'Monitor for symptoms of heat exhaustion',
+            'Consider stopping outdoor activities'
+        ];
+    } else {
+        recommendations = [
+            'Continue normal activities with standard precautions',
+            'Stay hydrated throughout the day',
+            'Take regular breaks if working outdoors',
+            'Monitor for any new symptoms'
+        ];
+    }
+    
+    // Update the detailed heatstroke display with the same format as demographics
+    const heatstrokeDetailedDisplay = document.getElementById('heatstroke-detailed-display');
+    console.log('🔍 Looking for heatstroke-detailed-display element:', heatstrokeDetailedDisplay);
+    
+    if (heatstrokeDetailedDisplay) {
+        console.log('✅ Found heatstroke-detailed-display element, updating content');
+        heatstrokeDetailedDisplay.innerHTML = `
+            <div class="prediction-card">
+                <div class="prediction-header">
+                    <h5>🔥 Heatstroke Risk Assessment</h5>
+                    <span class="prediction-status ${riskLevel.toLowerCase()}-risk">${riskLevel.toUpperCase()}</span>
+                </div>
+                <p class="text-muted">Based on your health data and current BPM readings, here's your heatstroke risk assessment:</p>
+                
+                <div class="prediction-details">
+                    <div class="prediction-item">
+                        <span class="label">Risk Level:</span>
+                        <span class="value">${riskLevel.toUpperCase()}</span>
+                    </div>
+                    <div class="prediction-item">
+                        <span class="label">Probability:</span>
+                        <span class="value">${(probability * 100).toFixed(1)}%</span>
+                    </div>
+                    <div class="prediction-item">
+                        <span class="label">Current BPM:</span>
+                        <span class="value">${bpmDisplay}</span>
+                    </div>
+                    <div class="prediction-item">
+                        <span class="label">Skin Temperature:</span>
+                        <span class="value">${skinTempDisplay}</span>
+                    </div>
+                    <div class="prediction-item">
+                        <span class="label">Data Source:</span>
+                        <span class="value">${dataSource}</span>
+                    </div>
+                </div>
+                
+                <div class="prediction-recommendations">
+                    <h6>Recommendations:</h6>
+                    <ul>
+                        ${recommendations.map(rec => `<li>${rec}</li>`).join('')}
+                    </ul>
+                </div>
+            </div>
+        `;
+    }
+}
+
+function formatFeatureName(feature) {
+    return feature
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, l => l.toUpperCase())
+        .replace('Blood Pressure Systolic', 'Systolic BP')
+        .replace('Blood Pressure Diastolic', 'Diastolic BP')
+        .replace('Heat Sensitive Medications', 'Heat-Sensitive Meds')
+        .replace('Previous Heat Illness', 'Previous Heat Issues')
+        .replace('Poor Heat Acclimation', 'Poor Heat Adaptation')
+        .replace('Prolonged Exertion', 'Long Exercise');
+}
+
+function generateHeatstrokeRecommendations(isHighRisk, probability, riskLevel) {
+    const recommendations = [];
+    
+    if (isHighRisk || probability > 0.7) {
+        recommendations.push({
+            priority: 'urgent',
+            icon: 'fa-exclamation-triangle',
+            text: 'IMMEDIATE ACTION REQUIRED: Seek medical attention immediately'
+        });
+        recommendations.push({
+            priority: 'urgent',
+            icon: 'fa-thermometer-half',
+            text: 'Move to a cool environment and remove excess clothing'
+        });
+        recommendations.push({
+            priority: 'urgent',
+            icon: 'fa-tint',
+            text: 'Hydrate with cool water and electrolyte solutions'
+        });
+    } else if (probability > 0.3) {
+        recommendations.push({
+            priority: 'moderate',
+            icon: 'fa-exclamation-circle',
+            text: 'Monitor symptoms closely and avoid heat exposure'
+        });
+        recommendations.push({
+            priority: 'moderate',
+            icon: 'fa-umbrella-beach',
+            text: 'Stay in air-conditioned or shaded areas'
+        });
+        recommendations.push({
+            priority: 'moderate',
+            icon: 'fa-tint',
+            text: 'Increase fluid intake and avoid strenuous activity'
+        });
+    } else {
+        recommendations.push({
+            priority: 'low',
+            icon: 'fa-check-circle',
+            text: 'Continue normal activities with standard heat precautions'
+        });
+        recommendations.push({
+            priority: 'low',
+            icon: 'fa-tint',
+            text: 'Maintain adequate hydration throughout the day'
+        });
+    }
+    
+    // Add general recommendations
+    recommendations.push({
+        priority: 'low',
+        icon: 'fa-clock',
+        text: 'Avoid outdoor activities during peak heat hours (10 AM - 4 PM)'
+    });
+    
+    return recommendations;
+}
+
+async function runSunstrokeTest() {
+    console.log('🔍 Test for Sunstroke button clicked!');
+    
+    const button = document.getElementById('testSunstrokeBtn');
+    if (!button) {
+        console.error('❌ Button not found!');
+        showNotification('❌ Button not found!', 'error');
+        return;
+    }
+    
+    const originalText = button.innerHTML;
+    console.log('📝 Original button text:', originalText);
+    
+    // Disable button and show loading
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Running Test...';
+    console.log('⏳ Button disabled and loading...');
+    
+    try {
+        console.log('🌐 Calling API endpoint...');
+        // Call the API endpoint
+        const response = await fetch('/api/test_sunstroke', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        console.log('📡 Response status:', response.status);
+        const result = await response.json();
+        console.log('📋 API Response:', result);
+        
+        if (result.success) {
+            // Show success notification
+            showNotification('☀️ Sunstroke test completed successfully! Results updated on dashboard.', 'success');
+            console.log('✅ Success notification shown');
+            
+            // Update the dashboard display directly instead of showing modal
+            // The API returns the same data that would be displayed in terminal
+            // We'll parse it and update the dashboard sections
+            
+            // Try to get the latest heatstroke prediction to update the display
+            console.log('🔄 Getting latest heatstroke prediction...');
+            const latestResponse = await fetch('/api/latest_heatstroke_prediction');
+            if (latestResponse.ok) {
+                const latestData = await latestResponse.json();
+                if (latestData.success) {
+                    updateHeatstrokeRiskDisplay(latestData.prediction);
+                    console.log('✅ Dashboard updated with latest heatstroke prediction');
+                }
+            }
+            
+            // Also log the terminal output to console for debugging
+            console.log('📋 Terminal Output:', result.output);
+            
+        } else {
+            console.error('❌ API returned error:', result.error);
+            showNotification('❌ Sunstroke test failed: ' + (result.error || 'Unknown error'), 'error');
+        }
+        
+    } catch (error) {
+        console.error('❌ Sunstroke test error:', error);
+        showNotification('❌ Sunstroke test failed: ' + error.message, 'error');
+    } finally {
+        // Re-enable button
+        button.disabled = false;
+        button.innerHTML = originalText;
+        console.log('🔄 Button re-enabled');
+    }
+}
+
+// Modal function removed - results now display directly on dashboard
+
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(function() {
+        showNotification('📋 Output copied to clipboard!', 'success');
+    }, function(err) {
+        showNotification('❌ Failed to copy to clipboard', 'error');
+    });
+}
+
+function showNotification(message, type = 'info') {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show position-fixed`;
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    notification.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 5000);
+}

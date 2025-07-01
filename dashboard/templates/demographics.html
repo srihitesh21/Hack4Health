@@ -648,7 +648,7 @@
 
         
         <div class="nav-links">
-            <a href="/">Back to Dashboard</a>
+            <a href="/" onclick="updateHomepageHeatstroke()">Back to Dashboard</a>
             <a href="/stress_fatigue_analysis">🧠 Advanced Stress Analysis</a>
             <a href="#" onclick="loadStoredData()">View Stored Data</a>
         </div>
@@ -697,9 +697,20 @@
                     // Show heatstroke prediction if available
                     if (data.heatstroke_prediction) {
                         console.log('Displaying heatstroke prediction:', data.heatstroke_prediction); // Debug logging
-                        displayHeatstrokePrediction(data.heatstroke_prediction);
+                        displayHeatstrokePrediction(data.heatstroke_prediction).then(() => {
+                            // Store the prediction in localStorage for homepage update
+                            localStorage.setItem('latestHeatstrokePrediction', JSON.stringify(data.heatstroke_prediction));
+                            console.log('✅ Heatstroke prediction stored for homepage update');
+                            
+                            // Trigger a custom event to notify the homepage
+                            window.dispatchEvent(new CustomEvent('heatstrokePredictionUpdated', {
+                                detail: data.heatstroke_prediction
+                            }));
+                        });
                     } else {
                         console.log('No heatstroke prediction in response'); // Debug logging
+                        // Still try to show BPM data if available
+                        displayBPMData();
                     }
 
                 } else {
@@ -715,7 +726,7 @@
 
 
 
-        function displayHeatstrokePrediction(prediction) {
+        async function displayHeatstrokePrediction(prediction) {
             console.log('displayHeatstrokePrediction called with:', prediction); // Debug logging
             
             // Create or update heatstroke prediction display
@@ -728,13 +739,62 @@
                 document.querySelector('.demographics-container').appendChild(heatstrokeDiv);
             }
 
+            // Try to get BPM data from the latest prediction API if not available in prediction
+            let bpmData = prediction.bpm_data || {};
+            if (!bpmData.bpm || !bpmData.skin_temperature) {
+                try {
+                    const response = await fetch('/api/latest_heatstroke_prediction');
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.success && data.bpm_data) {
+                            bpmData = data.bpm_data;
+                            console.log('Fetched BPM data from API:', bpmData);
+                        }
+                    }
+                } catch (error) {
+                    console.warn('Could not fetch BPM data:', error);
+                }
+            }
+
             const probability = (prediction.heatstroke_probability * 100).toFixed(1);
             const riskLevel = prediction.risk_level;
             const isHighRisk = prediction.heatstroke_prediction;
 
             // Get BPM and skin temperature from the prediction
-            const bpm = prediction.feature_values?.Heart_Rate || 'N/A';
-            const skinTemp = prediction.feature_values?.Skin_Temperature || 'N/A';
+            let bpm = prediction.feature_values?.Heart_Rate;
+            let skinTemp = prediction.feature_values?.Temperature;
+            
+            // Get additional BPM data if available (use the one we fetched above)
+            const confidence = bpmData.confidence || 0;
+            const skinTempRange = bpmData.skin_temp_min && bpmData.skin_temp_max ? 
+                `${bpmData.skin_temp_min.toFixed(1)}-${bpmData.skin_temp_max.toFixed(1)}°C` : '';
+            const dataSource = bpmData.data_source || 'Model Prediction';
+
+            // Debug logging
+            console.log('BPM Data from prediction:', {
+                bpm: bpm,
+                skinTemp: skinTemp,
+                bpmData: bpmData,
+                feature_values: prediction.feature_values
+            });
+
+            // Format BPM and skinTemp for display - try multiple sources
+            let bpmDisplay = '';
+            let skinTempDisplay = '';
+            
+            // Try to get BPM from multiple sources
+            if (typeof bpm === 'number' && !isNaN(bpm) && bpm > 0) {
+                bpmDisplay = `${bpm} BPM${confidence > 0 ? ` (Confidence: ${(confidence * 100).toFixed(1)}%)` : ''}`;
+            } else if (bpmData.bpm && typeof bpmData.bpm === 'number' && !isNaN(bpmData.bpm)) {
+                bpmDisplay = `${bpmData.bpm} BPM${confidence > 0 ? ` (Confidence: ${(confidence * 100).toFixed(1)}%)` : ''}`;
+            }
+            
+            // Try to get skin temperature from multiple sources
+            if (typeof skinTemp === 'number' && !isNaN(skinTemp) && skinTemp > 0) {
+                skinTempDisplay = `${skinTemp}°C${skinTempRange ? ` (Range: ${skinTempRange})` : ''}`;
+            } else if (bpmData.skin_temperature && typeof bpmData.skin_temperature === 'number' && !isNaN(bpmData.skin_temperature)) {
+                skinTempDisplay = `${bpmData.skin_temperature}°C${skinTempRange ? ` (Range: ${skinTempRange})` : ''}`;
+            }
 
             // Generate recommendations based on risk level
             let recommendations = [];
@@ -782,11 +842,15 @@
                         </div>
                         <div class="prediction-item">
                             <span class="label">Current BPM:</span>
-                            <span class="value">${bpm} BPM</span>
+                            <span class="value">${bpmDisplay}</span>
                         </div>
                         <div class="prediction-item">
                             <span class="label">Skin Temperature:</span>
-                            <span class="value">${skinTemp}°C</span>
+                            <span class="value">${skinTempDisplay}</span>
+                        </div>
+                        <div class="prediction-item">
+                            <span class="label">Data Source:</span>
+                            <span class="value">${dataSource}</span>
                         </div>
                     </div>
                     
@@ -802,6 +866,66 @@
             // Show the prediction
             heatstrokeDiv.style.display = 'block';
             console.log('Heatstroke prediction display completed'); // Debug logging
+        }
+
+        async function displayBPMData() {
+            console.log('Displaying BPM data...');
+            
+            try {
+                const response = await fetch('/api/latest_heatstroke_prediction');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.bpm_data) {
+                        const bpmData = data.bpm_data;
+                        
+                        // Create or update BPM data display
+                        let bpmDiv = document.getElementById('bpm-data-display');
+                        if (!bpmDiv) {
+                            bpmDiv = document.createElement('div');
+                            bpmDiv.id = 'bpm-data-display';
+                            bpmDiv.className = 'bpm-data';
+                            document.querySelector('.demographics-container').appendChild(bpmDiv);
+                        }
+
+                        const bpm = bpmData.bpm || 'N/A';
+                        const skinTemp = bpmData.skin_temperature || 'N/A';
+                        const confidence = bpmData.confidence || 0;
+                        const skinTempRange = bpmData.skin_temp_min && bpmData.skin_temp_max ? 
+                            `${bpmData.skin_temp_min.toFixed(1)}-${bpmData.skin_temp_max.toFixed(1)}°C` : 'N/A';
+                        const dataSource = bpmData.data_source || 'Sensor Data';
+
+                        bpmDiv.innerHTML = `
+                            <div class="prediction-card">
+                                <div class="prediction-header">
+                                    <h5>📊 Current Physiological Data</h5>
+                                    <span class="prediction-status info">LIVE</span>
+                                </div>
+                                <p class="text-muted">Real-time data from your Arduino sensors:</p>
+                                
+                                <div class="prediction-details">
+                                    <div class="prediction-item">
+                                        <span class="label">Current BPM:</span>
+                                        <span class="value">${bpm} BPM${confidence > 0 ? ` (Confidence: ${(confidence * 100).toFixed(1)}%)` : ''}</span>
+                                    </div>
+                                    <div class="prediction-item">
+                                        <span class="label">Skin Temperature:</span>
+                                        <span class="value">${skinTemp}°C (Range: ${skinTempRange})</span>
+                                    </div>
+                                    <div class="prediction-item">
+                                        <span class="label">Data Source:</span>
+                                        <span class="value">${dataSource}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+
+                        bpmDiv.style.display = 'block';
+                        console.log('BPM data display completed');
+                    }
+                }
+            } catch (error) {
+                console.warn('Could not fetch BPM data:', error);
+            }
         }
 
         function loadStoredData() {
@@ -911,6 +1035,8 @@
         // Load stored data when page loads
         document.addEventListener('DOMContentLoaded', function() {
             loadStoredData();
+            // Also try to display BPM data
+            displayBPMData();
         });
         
 
@@ -1079,6 +1205,20 @@
             document.getElementById('analysisResults').style.display = 'block';
         }
 
+        function updateHomepageHeatstroke() {
+            // Get the latest heatstroke prediction from localStorage
+            const prediction = localStorage.getItem('latestHeatstrokePrediction');
+            if (prediction) {
+                try {
+                    const predictionData = JSON.parse(prediction);
+                    // Trigger storage event to update homepage
+                    localStorage.setItem('latestHeatstrokePrediction', JSON.stringify(predictionData));
+                    console.log('✅ Triggered homepage heatstroke update');
+                } catch (error) {
+                    console.warn('Error updating homepage heatstroke:', error);
+                }
+            }
+        }
 
     </script>
 </body>

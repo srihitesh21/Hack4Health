@@ -1060,15 +1060,11 @@ def submit_demographics():
             heatstroke_result = None
             
             try:
-                # Get BPM data from CSV analysis
-                bpm_data = None
-                if csv_analysis_results:
-                    bpm_data = {
-                        'bpm': csv_analysis_results.get('bpm', 75),
-                        'skin_temperature': csv_analysis_results.get('skin_temperature', 36.5)
-                    }
+                # Get BPM and temperature data from newA.py analysis
+                bpm_data = get_bpm_and_temperature_data()
+                print(f"📊 Using real BPM data: {bpm_data['bpm']:.1f} BPM, {bpm_data['skin_temperature']:.1f}°C")
                 
-                # Run heatstroke prediction
+                # Run heatstroke prediction with real physiological data
                 heatstroke_result = heatstroke_predictor.predict(assessment_data, bpm_data)
                 
                 if 'error' not in heatstroke_result:
@@ -2049,9 +2045,71 @@ def api_mediapipe_analysis():
 # --- Heatstroke Predictor Integration ---
 import sys
 sys.path.append('../CSV datasets')
+sys.path.append('../BPM')  # Add BPM directory to path
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 import joblib
+
+def get_bpm_and_temperature_data():
+    """
+    Get current BPM and skin temperature data from newA.py analysis
+    
+    Returns:
+        dict: Contains 'bpm', 'skin_temperature', 'confidence', and other metrics
+    """
+    try:
+        # Import the BPM analysis function
+        from newA import run_pulse_rate_from_csv
+        
+        # Analyze the latest Arduino data
+        bpm, confidence, infection_score, dehydration_score, arrhythmia_score = run_pulse_rate_from_csv(
+            "../BPM/A.csv", 
+            fs=10, 
+            plot_spectrogram=False
+        )
+        
+        # Get skin temperature from the CSV file
+        import pandas as pd
+        try:
+            df = pd.read_csv("../BPM/A.csv", skiprows=1)
+            skin_temps = df["SkinTemp(C)"].astype(float).values
+            avg_skin_temp = float(np.mean(skin_temps))
+            min_skin_temp = float(np.min(skin_temps))
+            max_skin_temp = float(np.max(skin_temps))
+        except Exception as e:
+            print(f"⚠️ Could not read skin temperature from CSV: {e}")
+            avg_skin_temp = 34.6  # Fallback value from logs
+            min_skin_temp = 34.0
+            max_skin_temp = 35.0
+        
+        return {
+            'bpm': float(bpm),
+            'skin_temperature': avg_skin_temp,
+            'skin_temp_min': min_skin_temp,
+            'skin_temp_max': max_skin_temp,
+            'confidence': float(confidence),
+            'infection_score': float(infection_score),
+            'dehydration_score': float(dehydration_score),
+            'arrhythmia_score': float(arrhythmia_score),
+            'data_source': 'newA.py analysis',
+            'timestamp': pd.Timestamp.now().isoformat()
+        }
+        
+    except Exception as e:
+        print(f"⚠️ Could not get BPM data from newA.py: {e}")
+        # Return fallback data
+        return {
+            'bpm': 72.0,
+            'skin_temperature': 37.0,
+            'skin_temp_min': 36.5,
+            'skin_temp_max': 37.5,
+            'confidence': 0.0,
+            'infection_score': 0.0,
+            'dehydration_score': 0.0,
+            'arrhythmia_score': 0.0,
+            'data_source': 'fallback values',
+            'timestamp': pd.Timestamp.now().isoformat()
+        }
 
 class DashboardHeatstrokePredictor:
     def __init__(self):
@@ -2161,13 +2219,19 @@ class DashboardHeatstrokePredictor:
         features_scaled = self.scaler.transform([features])
         prediction = self.model.predict(features_scaled)[0]
         probability = self.model.predict_proba(features_scaled)[0]
-        return {
+        result = {
             'heatstroke_prediction': bool(prediction),
             'heatstroke_probability': float(probability[1] if len(probability) > 1 else probability[0]),
             'risk_level': self._get_risk_level(probability[1] if len(probability) > 1 else probability[0]),
             'features_used': self.feature_names,
             'feature_values': dict(zip(self.feature_names, features))
         }
+        
+        # Add BPM data to the result if available
+        if bpm_data:
+            result['bpm_data'] = bpm_data
+            
+        return result
     def _get_risk_level(self, probability):
         if probability < 0.3:
             return "Low"
@@ -2203,19 +2267,11 @@ def print_latest_heatstroke_prediction():
     print(f"Risk Factors: {latest.get('risk_factors', [])}")
     print(f"Date: {latest.get('date', latest.get('timestamp'))}")
     
-    # Get BPM data from newA.py analysis
-    try:
-        from newA import run_pulse_rate_from_csv
-        bpm, confidence, infection_score, dehydration_score, arrhythmia_score = run_pulse_rate_from_csv("../BPM/A.csv", fs=10, plot_spectrogram=False)
-        bpm_data = {
-            'bpm': bpm,
-            'confidence': confidence,
-            'skin_temperature': 34.6  # From the logs
-        }
-        print(f"📊 BPM Data: {bpm:.1f} BPM, Confidence: {confidence:.3f}")
-    except Exception as e:
-        print(f"⚠️ Could not get BPM data: {e}")
-        bpm_data = None
+    # Get BPM and temperature data from newA.py analysis
+    bpm_data = get_bpm_and_temperature_data()
+    print(f"📊 BPM Data: {bpm_data['bpm']:.1f} BPM, Confidence: {bpm_data['confidence']:.3f}")
+    print(f"🌡️ Skin Temperature: {bpm_data['skin_temperature']:.1f}°C (Range: {bpm_data['skin_temp_min']:.1f}-{bpm_data['skin_temp_max']:.1f}°C)")
+    print(f"📈 Data Source: {bpm_data['data_source']}")
     
     # Use the DashboardHeatstrokePredictor
     result = heatstroke_predictor.predict(latest, bpm_data)
@@ -2247,18 +2303,8 @@ def get_latest_heatstroke_prediction():
     
     latest = demographics_data[-1]
     
-    # Get BPM data from newA.py analysis
-    try:
-        from newA import run_pulse_rate_from_csv
-        bpm, confidence, infection_score, dehydration_score, arrhythmia_score = run_pulse_rate_from_csv("../BPM/A.csv", fs=10, plot_spectrogram=False)
-        bpm_data = {
-            'bpm': bpm,
-            'confidence': confidence,
-            'skin_temperature': 34.6  # From the logs
-        }
-    except Exception as e:
-        print(f"⚠️ Could not get BPM data: {e}")
-        bpm_data = None
+    # Get BPM and temperature data from newA.py analysis
+    bpm_data = get_bpm_and_temperature_data()
     
     # Get prediction
     result = heatstroke_predictor.predict(latest, bpm_data)

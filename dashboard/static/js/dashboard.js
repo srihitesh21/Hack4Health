@@ -45,6 +45,40 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Setup heatstroke prediction
     setupHeatstrokePrediction();
+    
+    // Listen for heatstroke prediction updates from demographics page
+    window.addEventListener('storage', function(e) {
+        if (e.key === 'latestHeatstrokePrediction') {
+            try {
+                const prediction = JSON.parse(e.newValue);
+                if (prediction) {
+                    console.log('🔄 Updating homepage with heatstroke prediction:', prediction);
+                    updateDetailedHeatstrokeDisplay(prediction);
+                    console.log('✅ Homepage heatstroke display updated from demographics');
+                }
+            } catch (error) {
+                console.warn('Error parsing heatstroke prediction from storage:', error);
+            }
+        }
+    });
+    
+    // Also check for existing prediction on page load
+    const existingPrediction = localStorage.getItem('latestHeatstrokePrediction');
+    if (existingPrediction) {
+        try {
+            const prediction = JSON.parse(existingPrediction);
+            console.log('📋 Found existing heatstroke prediction on page load:', prediction);
+            updateDetailedHeatstrokeDisplay(prediction);
+        } catch (error) {
+            console.warn('Error parsing existing heatstroke prediction:', error);
+        }
+    }
+    
+    // Listen for custom heatstroke prediction events
+    window.addEventListener('heatstrokePredictionUpdated', function(e) {
+        console.log('🎯 Received heatstroke prediction update event:', e.detail);
+        updateDetailedHeatstrokeDisplay(e.detail);
+    });
 });
 
 function initializeCharts() {
@@ -207,6 +241,29 @@ function setupEventListeners() {
         testSunstrokeBtn.addEventListener('click', runSunstrokeTest);
     } else {
         console.error('❌ Test Sunstroke button not found!');
+    }
+    
+    // Load Latest Heatstroke button
+    const loadHeatstrokeBtn = document.getElementById('loadHeatstrokeBtn');
+    console.log('🔍 Looking for loadHeatstrokeBtn:', loadHeatstrokeBtn);
+    if (loadHeatstrokeBtn) {
+        console.log('✅ Load Heatstroke button found, adding event listener');
+        loadHeatstrokeBtn.addEventListener('click', function() {
+            const prediction = localStorage.getItem('latestHeatstrokePrediction');
+            if (prediction) {
+                try {
+                    const predictionData = JSON.parse(prediction);
+                    console.log('🔥 Manually loading heatstroke prediction:', predictionData);
+                    updateDetailedHeatstrokeDisplay(predictionData);
+                } catch (error) {
+                    console.error('Error parsing heatstroke prediction:', error);
+                }
+            } else {
+                console.log('No heatstroke prediction found in localStorage');
+            }
+        });
+    } else {
+        console.error('❌ Load Heatstroke button not found!');
     }
     connectBtn.addEventListener('click', function() {
         socket.emit('connect_arduino');
@@ -981,13 +1038,35 @@ async function performQuickHeatstrokePrediction() {
 
 async function getCurrentBPMData() {
     try {
-        // Try to get BPM data from the dashboard API
-        const response = await fetch('/api/csv_analysis');
+        // Try to get BPM data from the latest heatstroke prediction API
+        const response = await fetch('/api/latest_heatstroke_prediction');
         if (response.ok) {
             const data = await response.json();
+            if (data.success && data.bpm_data) {
+                return {
+                    bpm: data.bpm_data.bpm || 75,
+                    skin_temperature: data.bpm_data.skin_temperature || 36.5,
+                    confidence: data.bpm_data.confidence || 0,
+                    skin_temp_min: data.bpm_data.skin_temp_min || 36.0,
+                    skin_temp_max: data.bpm_data.skin_temp_max || 37.0,
+                    data_source: data.bpm_data.data_source || 'API',
+                    timestamp: data.bpm_data.timestamp
+                };
+            }
+        }
+        
+        // Fallback: Try to get BPM data from the dashboard API
+        const csvResponse = await fetch('/api/csv_analysis');
+        if (csvResponse.ok) {
+            const csvData = await csvResponse.json();
             return {
-                bpm: data.bpm || 75,
-                skin_temperature: data.skin_temperature || 36.5
+                bpm: csvData.bpm || 75,
+                skin_temperature: csvData.skin_temperature || 36.5,
+                confidence: csvData.confidence || 0,
+                skin_temp_min: csvData.skin_temp_min || 36.0,
+                skin_temp_max: csvData.skin_temp_max || 37.0,
+                data_source: 'CSV Analysis',
+                timestamp: new Date().toISOString()
             };
         }
     } catch (error) {
@@ -997,7 +1076,12 @@ async function getCurrentBPMData() {
     // Fallback to default values
     return {
         bpm: 75,
-        skin_temperature: 36.5
+        skin_temperature: 36.5,
+        confidence: 0,
+        skin_temp_min: 36.0,
+        skin_temp_max: 37.0,
+        data_source: 'Default Values',
+        timestamp: new Date().toISOString()
     };
 }
 
@@ -1112,122 +1196,101 @@ function updateHeatstrokeRiskDisplay(result) {
 }
 
 function updateDetailedHeatstrokeDisplay(result) {
+    console.log('🎯 updateDetailedHeatstrokeDisplay called with:', result);
+    
     const isHighRisk = result.heatstroke_prediction;
     const probability = result.heatstroke_probability || result.probability || 0;
     const riskLevel = result.risk_level || (isHighRisk ? 'HIGH' : (probability > 0.3 ? 'MODERATE' : 'LOW'));
     
-    // Update Risk Summary
-    const riskLevelElement = document.getElementById('detailed-risk-level');
-    const riskProbabilityElement = document.getElementById('detailed-risk-probability');
-    const riskPredictionElement = document.getElementById('detailed-risk-prediction');
+    console.log('📊 Parsed values:', { isHighRisk, probability, riskLevel });
     
-    if (riskLevelElement) {
-        riskLevelElement.textContent = riskLevel;
-        riskLevelElement.style.color = isHighRisk ? '#dc3545' : (probability > 0.3 ? '#f57c00' : '#28a745');
+    // Get BPM and skin temperature from the prediction
+    let bpm = result.feature_values?.Heart_Rate;
+    let skinTemp = result.feature_values?.Temperature;
+    
+    // Get additional BPM data if available
+    const bpmData = result.bpm_data || {};
+    const confidence = bpmData.confidence || 0;
+    const skinTempRange = bpmData.skin_temp_min && bpmData.skin_temp_max ? 
+        `${bpmData.skin_temp_min.toFixed(1)}-${bpmData.skin_temp_max.toFixed(1)}°C` : '';
+    const dataSource = bpmData.data_source || 'Model Prediction';
+
+    // Format BPM and skinTemp for display
+    const bpmDisplay = (typeof bpm === 'number' && !isNaN(bpm)) ? `${bpm} BPM${confidence > 0 ? ` (Confidence: ${(confidence * 100).toFixed(1)}%)` : ''}` : '';
+    const skinTempDisplay = (typeof skinTemp === 'number' && !isNaN(skinTemp)) ? `${skinTemp}°C${skinTempRange ? ` (Range: ${skinTempRange})` : ''}` : '';
+    
+    // Generate recommendations based on risk level
+    let recommendations = [];
+    if (riskLevel === 'High' || isHighRisk) {
+        recommendations = [
+            'Immediately move to a cool environment',
+            'Remove excess clothing',
+            'Apply cool water to skin',
+            'Seek immediate medical attention',
+            'Avoid any physical activity'
+        ];
+    } else if (riskLevel === 'Moderate') {
+        recommendations = [
+            'Move to air-conditioned environment',
+            'Stay hydrated with cool water',
+            'Take frequent breaks',
+            'Monitor for symptoms of heat exhaustion',
+            'Consider stopping outdoor activities'
+        ];
+    } else {
+        recommendations = [
+            'Continue normal activities with standard precautions',
+            'Stay hydrated throughout the day',
+            'Take regular breaks if working outdoors',
+            'Monitor for any new symptoms'
+        ];
     }
     
-    if (riskProbabilityElement) {
-        riskProbabilityElement.textContent = `${(probability * 100).toFixed(1)}% Probability`;
-    }
+    // Update the detailed heatstroke display with the same format as demographics
+    const heatstrokeDetailedDisplay = document.getElementById('heatstroke-detailed-display');
+    console.log('🔍 Looking for heatstroke-detailed-display element:', heatstrokeDetailedDisplay);
     
-    if (riskPredictionElement) {
-        riskPredictionElement.textContent = isHighRisk ? 'HIGH RISK DETECTED' : 'LOW RISK';
-        riskPredictionElement.style.color = isHighRisk ? '#dc3545' : '#28a745';
-    }
-    
-    // Update Key Risk Factors
-    const keyFeaturesList = document.getElementById('key-features-list');
-    if (keyFeaturesList && result.feature_values) {
-        const activeFeatures = Object.entries(result.feature_values)
-            .filter(([key, value]) => value !== 0 && value !== '0')
-            .sort((a, b) => b[1] - a[1]); // Sort by value descending
-        
-        if (activeFeatures.length > 0) {
-            keyFeaturesList.innerHTML = activeFeatures.map(([feature, value]) => `
-                <div class="feature-item">
-                    <span class="feature-name">${formatFeatureName(feature)}</span>
-                    <span class="feature-value">${value}</span>
+    if (heatstrokeDetailedDisplay) {
+        console.log('✅ Found heatstroke-detailed-display element, updating content');
+        heatstrokeDetailedDisplay.innerHTML = `
+            <div class="prediction-card">
+                <div class="prediction-header">
+                    <h5>🔥 Heatstroke Risk Assessment</h5>
+                    <span class="prediction-status ${riskLevel.toLowerCase()}-risk">${riskLevel.toUpperCase()}</span>
                 </div>
-            `).join('');
-        } else {
-            keyFeaturesList.innerHTML = '<div class="text-muted">No significant risk factors detected</div>';
-        }
-    }
-    
-    // Update Input Data
-    const inputDataDisplay = document.getElementById('input-data-display');
-    if (inputDataDisplay) {
-        const healthData = JSON.parse(localStorage.getItem('healthAssessmentData') || '{}');
-        
-        // Get BPM data asynchronously
-        getCurrentBPMData().then(bpmData => {
-            inputDataDisplay.innerHTML = `
-                <div class="input-data-item">
-                    <span class="input-data-label">Age:</span>
-                    <span class="input-data-value">${healthData.age || 'N/A'} years</span>
+                <p class="text-muted">Based on your health data and current BPM readings, here's your heatstroke risk assessment:</p>
+                
+                <div class="prediction-details">
+                    <div class="prediction-item">
+                        <span class="label">Risk Level:</span>
+                        <span class="value">${riskLevel.toUpperCase()}</span>
+                    </div>
+                    <div class="prediction-item">
+                        <span class="label">Probability:</span>
+                        <span class="value">${(probability * 100).toFixed(1)}%</span>
+                    </div>
+                    <div class="prediction-item">
+                        <span class="label">Current BPM:</span>
+                        <span class="value">${bpmDisplay}</span>
+                    </div>
+                    <div class="prediction-item">
+                        <span class="label">Skin Temperature:</span>
+                        <span class="value">${skinTempDisplay}</span>
+                    </div>
+                    <div class="prediction-item">
+                        <span class="label">Data Source:</span>
+                        <span class="value">${dataSource}</span>
+                    </div>
                 </div>
-                <div class="input-data-item">
-                    <span class="input-data-label">Gender:</span>
-                    <span class="input-data-value">${healthData.gender || 'N/A'}</span>
+                
+                <div class="prediction-recommendations">
+                    <h6>Recommendations:</h6>
+                    <ul>
+                        ${recommendations.map(rec => `<li>${rec}</li>`).join('')}
+                    </ul>
                 </div>
-                <div class="input-data-item">
-                    <span class="input-data-label">Heart Rate:</span>
-                    <span class="input-data-value">${bpmData.bpm || 'N/A'} BPM</span>
-                </div>
-                <div class="input-data-item">
-                    <span class="input-data-label">Skin Temp:</span>
-                    <span class="input-data-value">${bpmData.skin_temperature || 'N/A'}°C</span>
-                </div>
-                <div class="input-data-item">
-                    <span class="input-data-label">Symptoms:</span>
-                    <span class="input-data-value">${(healthData.symptoms || []).length} reported</span>
-                </div>
-                <div class="input-data-item">
-                    <span class="input-data-label">Risk Factors:</span>
-                    <span class="input-data-value">${(healthData.risk_factors || []).length} identified</span>
-                </div>
-            `;
-        }).catch(error => {
-            console.warn('Could not get BPM data for display:', error);
-            // Fallback display without BPM data
-            inputDataDisplay.innerHTML = `
-                <div class="input-data-item">
-                    <span class="input-data-label">Age:</span>
-                    <span class="input-data-value">${healthData.age || 'N/A'} years</span>
-                </div>
-                <div class="input-data-item">
-                    <span class="input-data-label">Gender:</span>
-                    <span class="input-data-value">${healthData.gender || 'N/A'}</span>
-                </div>
-                <div class="input-data-item">
-                    <span class="input-data-label">Heart Rate:</span>
-                    <span class="input-data-value">N/A</span>
-                </div>
-                <div class="input-data-item">
-                    <span class="input-data-label">Skin Temp:</span>
-                    <span class="input-data-value">N/A</span>
-                </div>
-                <div class="input-data-item">
-                    <span class="input-data-label">Symptoms:</span>
-                    <span class="input-data-value">${(healthData.symptoms || []).length} reported</span>
-                </div>
-                <div class="input-data-item">
-                    <span class="input-data-label">Risk Factors:</span>
-                    <span class="input-data-value">${(healthData.risk_factors || []).length} identified</span>
-                </div>
-            `;
-        });
-    }
-    
-    // Update Recommendations
-    const recommendationsElement = document.getElementById('heatstroke-recommendations');
-    if (recommendationsElement) {
-        const recommendations = generateHeatstrokeRecommendations(isHighRisk, probability, riskLevel);
-        recommendationsElement.innerHTML = recommendations.map(rec => `
-            <div class="recommendation-item ${rec.priority}">
-                <i class="fas ${rec.icon}"></i> ${rec.text}
             </div>
-        `).join('');
+        `;
     }
 }
 

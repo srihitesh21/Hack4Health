@@ -40,7 +40,8 @@ except ImportError as e:
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'arduino_dashboard_secret'
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
+# Use threading mode to avoid eventlet SSL issues with Python 3.12
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading', logger=False, engineio_logger=False)
 
 # Arduino connection settings
 ARDUINO_PORT = '/dev/tty.usbmodem*'  # Common on macOS, adjust for your system
@@ -99,6 +100,9 @@ arduino_connected = False
 arduino_port = None
 demo_mode = True
 csv_analysis_results = None
+
+# Initialize heatstroke predictor globally
+heatstroke_predictor = None
 
 class PretrainedStressFatigueModel:
     """
@@ -1051,10 +1055,46 @@ def submit_demographics():
             except Exception as save_error:
                 print(f"⚠️  Warning: Could not save to file: {save_error}")
             
+            # 🔥 AUTOMATIC HEATSTROKE PREDICTION
+            print("\n🔥 Running automatic heatstroke prediction...")
+            heatstroke_result = None
+            
+            try:
+                # Get BPM data from CSV analysis
+                bpm_data = None
+                if csv_analysis_results:
+                    bpm_data = {
+                        'bpm': csv_analysis_results.get('bpm', 75),
+                        'skin_temperature': csv_analysis_results.get('skin_temperature', 36.5)
+                    }
+                
+                # Run heatstroke prediction
+                heatstroke_result = heatstroke_predictor.predict(assessment_data, bpm_data)
+                
+                if 'error' not in heatstroke_result:
+                    print(f"✅ Heatstroke prediction completed:")
+                    print(f"   Risk: {'HIGH' if heatstroke_result['heatstroke_prediction'] else 'LOW'}")
+                    print(f"   Probability: {heatstroke_result['heatstroke_probability']*100:.1f}%")
+                    print(f"   Risk Level: {heatstroke_result['risk_level']}")
+                    
+                    # Print key features
+                    if heatstroke_result.get('feature_values'):
+                        print(f"\n🔍 Key Features:")
+                        for feature, value in heatstroke_result['feature_values'].items():
+                            if value != 0:
+                                print(f"   {feature}: {value}")
+                else:
+                    print(f"❌ Heatstroke prediction error: {heatstroke_result['error']}")
+                    
+            except Exception as heatstroke_error:
+                print(f"❌ Error running heatstroke prediction: {heatstroke_error}")
+                heatstroke_result = {'error': str(heatstroke_error)}
+            
             return jsonify({
                 'success': True,
                 'message': 'Assessment submitted successfully',
-                'risk_scores': assessment_data.get('risk_scores', {})
+                'risk_scores': assessment_data.get('risk_scores', {}),
+                'heatstroke_prediction': heatstroke_result
             })
         else:
             return jsonify({'success': False, 'error': 'No data received'})
@@ -2136,8 +2176,9 @@ class DashboardHeatstrokePredictor:
         else:
             return "High"
 
-# Instantiate and cache the predictor
-heatstroke_predictor = DashboardHeatstrokePredictor()
+# Initialize heatstroke predictor
+if heatstroke_predictor is None:
+    heatstroke_predictor = DashboardHeatstrokePredictor()
 
 @app.route('/api/heatstroke_prediction', methods=['POST'])
 def api_heatstroke_prediction():
@@ -2235,6 +2276,43 @@ def get_latest_heatstroke_prediction():
         'bpm_data': bpm_data
     })
 
+@app.route('/api/test_sunstroke', methods=['POST'])
+def test_sunstroke():
+    """API endpoint to run the sunstroke test command"""
+    try:
+        import subprocess
+        import sys
+        import os
+        
+        # Get the current script path
+        script_path = os.path.abspath(__file__)
+        
+        # Run the command
+        result = subprocess.run([
+            sys.executable,  # Use the same Python interpreter
+            script_path,
+            '--print-latest-heatstroke'
+        ], capture_output=True, text=True, cwd=os.path.dirname(script_path))
+        
+        if result.returncode == 0:
+            return jsonify({
+                'success': True,
+                'output': result.stdout,
+                'message': 'Sunstroke test completed successfully'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': result.stderr,
+                'output': result.stdout
+            })
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        })
+
 if __name__ == '__main__':
     import sys
     
@@ -2252,5 +2330,6 @@ if __name__ == '__main__':
     load_and_analyze_csv()
     
     print("Arduino Dashboard starting...")
-    print("Open http://localhost:5002 in your browser")
-    socketio.run(app, host='0.0.0.0', port=5002, debug=True)
+    print("Open http://localhost:5003 in your browser")
+    # Use SocketIO with threading mode to avoid SSL issues
+    socketio.run(app, host='0.0.0.0', port=5003, debug=True, allow_unsafe_werkzeug=True)

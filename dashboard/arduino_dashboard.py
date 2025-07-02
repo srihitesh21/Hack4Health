@@ -2206,14 +2206,14 @@ def api_stress_fatigue_analysis():
             })
         
         # Get analysis summary
-                    summary = stress_fatigue_detector.generate_wellness_summary()
+        summary = stress_fatigue_detector.generate_wellness_summary()
         
         return jsonify({
-            'stress_level': summary['stress_level'],
-            'fatigue_level': summary['fatigue_level'],
-            'confidence': summary['confidence'],
-            'trends': summary['trends'],
-            'recommendations': summary['recommendations'],
+            'stress_level': summary['tension_level'],
+            'fatigue_level': summary['exhaustion_level'],
+            'confidence': summary['analysis_confidence'],
+            'trends': summary['wellness_trends'],
+            'recommendations': summary['wellness_recommendations'],
             'success': True
         })
         

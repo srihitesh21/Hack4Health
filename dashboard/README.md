@@ -82,6 +82,35 @@ temp:25.5,humidity:60.2,light:512,pressure:1013.25,ppg:258
 - Sensor values and heart rate data
 - Automatic log rotation (keeps last 50 entries)
 
+## New Features: Physiological Data Integration (2025)
+
+### Heatstroke Risk Assessment with Real Sensor Data
+- The dashboard now uses **real-time BPM (heart rate)** and **skin temperature** from Arduino sensor CSVs (analyzed via `BPM/newA.py`) to improve the accuracy of heatstroke risk prediction.
+- The **Heatstroke Risk Assessment** card on the demographics page displays:
+  - Risk Level (Low/Moderate/High)
+  - Probability (%)
+  - **Current BPM** (with confidence score)
+  - **Skin Temperature** (with min-max range)
+  - Personalized recommendations
+- These values are automatically extracted from the latest sensor data and used as features in the machine learning model for heatstroke prediction.
+
+### Live Physiological Data Card
+- Even if no heatstroke prediction is available, a separate card displays the latest BPM and skin temperature range from your Arduino sensors.
+- This card updates in real time and provides transparency into the physiological data being used for risk assessment.
+
+#### Example Display
+```
+📊 Current Physiological Data
+Current BPM: 84.8 BPM (Confidence: 21.7%)
+Skin Temperature: 34.6°C (Range: 23.7-42.1°C)
+Data Source: Sensor Data
+```
+
+### How it Works
+- When you submit a health assessment, the backend analyzes the latest Arduino CSV (e.g., `BPM/A.csv`) to extract BPM and skin temperature.
+- These values are passed to the heatstroke prediction model, making the risk assessment more accurate and personalized.
+- The frontend displays these values in both the risk card and a dedicated physiological data card.
+
 ## File Structure
 
 ```

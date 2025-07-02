@@ -596,6 +596,485 @@
             margin: 10px 0;
             font-style: italic;
         }
+
+        /* Heatstroke Results Styles */
+        .heatstroke-results {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            margin-top: 30px;
+            border: 2px solid #e9ecef;
+        }
+
+        .results-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f8f9fa;
+        }
+
+        .results-header h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .timestamp {
+            color: #666;
+            font-size: 14px;
+            font-style: italic;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .result-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .result-card.high-risk {
+            background: linear-gradient(135deg, #ffe6e6, #ffcccc);
+            border-color: #dc3545;
+        }
+
+        .result-card.moderate-risk {
+            background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+            border-color: #ffc107;
+        }
+
+        .result-card.low-risk {
+            background: linear-gradient(135deg, #e8f5e8, #d4edda);
+            border-color: #28a745;
+        }
+
+        .result-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .result-title {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+
+        .result-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .result-description {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.4;
+        }
+
+        .analysis-details {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+
+        .analysis-details h4 {
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .detail-label {
+            font-weight: 500;
+            color: #666;
+        }
+
+        .detail-value {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .recommendations-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+
+        .recommendations-section h4 {
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .recommendation-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .recommendation-list li {
+            padding: 12px 0;
+            border-bottom: 1px solid #e9ecef;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
+        .recommendation-list li:last-child {
+            border-bottom: none;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .action-buttons .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 500;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .action-buttons .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+
+        .action-buttons .btn-primary:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+        }
+
+        .action-buttons .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .action-buttons .btn-secondary:hover {
+            background: #545b62;
+            transform: translateY(-2px);
+        }
+
+        /* Print styles */
+        @media print {
+            .heatstroke-results {
+                box-shadow: none;
+                border: 2px solid #333;
+            }
+            
+            .action-buttons {
+                display: none;
+            }
+        }
+
+        /* Emergency Alert Modal Styles */
+        .emergency-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: emergencyFadeIn 0.3s ease-out;
+        }
+
+        @keyframes emergencyFadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .emergency-content {
+            background: white;
+            border-radius: 20px;
+            padding: 0;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: emergencySlideIn 0.4s ease-out;
+        }
+
+        @keyframes emergencySlideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .emergency-header {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            border-radius: 20px 20px 0 0;
+        }
+
+        .emergency-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+            animation: emergencyPulse 2s infinite;
+        }
+
+        @keyframes emergencyPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .emergency-header h2 {
+            margin: 0 0 10px 0;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .emergency-subtitle {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .emergency-body {
+            padding: 30px;
+            text-align: center;
+        }
+
+        .emergency-body p {
+            margin-bottom: 20px;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
+        .emergency-call-status {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+            border: 2px solid #dc3545;
+        }
+
+        .call-animation {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+
+        .phone-icon {
+            font-size: 32px;
+            margin-right: 15px;
+            animation: phoneRing 1s infinite;
+        }
+
+        @keyframes phoneRing {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-10deg); }
+            75% { transform: rotate(10deg); }
+        }
+
+        .call-text {
+            font-size: 18px;
+            font-weight: bold;
+            color: #dc3545;
+        }
+
+        .call-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #dc3545;
+            font-family: 'Courier New', monospace;
+        }
+
+        .emergency-actions {
+            text-align: left;
+            margin-top: 25px;
+        }
+
+        .emergency-actions p {
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .emergency-actions ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .emergency-actions li {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+            font-size: 15px;
+        }
+
+        .emergency-actions li:last-child {
+            border-bottom: none;
+        }
+
+        .emergency-footer {
+            padding: 20px 30px 30px 30px;
+            text-align: center;
+            border-top: 1px solid #eee;
+        }
+
+        .emergency-footer .btn {
+            margin: 0 10px;
+            padding: 12px 24px;
+            font-weight: bold;
+            border-radius: 8px;
+        }
+
+        .call-confirmed {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .success-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+            animation: successBounce 0.6s ease-out;
+        }
+
+        @keyframes successBounce {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .call-confirmed h3 {
+            color: #28a745;
+            margin-bottom: 15px;
+        }
+
+        .emergency-number {
+            font-size: 20px;
+            font-weight: bold;
+            color: #dc3545;
+            margin-top: 15px;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* Clock-in Status Indicator Styles */
+        .clock-in-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            transition: all 0.3s ease;
+        }
+
+        .clock-in-status.waiting {
+            background: #fff3cd;
+            border-color: #ffc107;
+            color: #856404;
+        }
+
+        .clock-in-status.clocked-in {
+            background: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+
+        .clock-in-status.auto-clocked {
+            background: #d1ecf1;
+            border-color: #17a2b8;
+            color: #0c5460;
+        }
+
+        .status-icon {
+            font-size: 20px;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        .clock-in-status.clocked-in .status-icon,
+        .clock-in-status.auto-clocked .status-icon {
+            animation: none;
+        }
+
+        .status-text {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        /* Mobile responsiveness */
+        @media (max-width: 768px) {
+            .emergency-content {
+                width: 95%;
+                margin: 20px;
+            }
+            
+            .emergency-header {
+                padding: 20px;
+            }
+            
+            .emergency-header h2 {
+                font-size: 24px;
+            }
+            
+            .emergency-body {
+                padding: 20px;
+            }
+            
+            .emergency-footer {
+                padding: 15px 20px 20px 20px;
+            }
+            
+            .emergency-footer .btn {
+                display: block;
+                margin: 10px 0;
+                width: 100%;
+            }
+        }
         
         .timer-ready {
             color: #28a745;
@@ -916,6 +1395,65 @@
                 </select>
                 </div>
             </div>
+            
+            <!-- Weather Data Section -->
+            <div class="form-section" style="margin-top: 20px;">
+                <h4><i class="fas fa-cloud-sun text-info"></i> Current Weather & Location</h4>
+                <p class="text-muted">Current environmental conditions for enhanced health assessment</p>
+                
+                <div class="weather-container" id="weatherContainer" style="display: none;">
+                    <div class="weather-info" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                        <div class="weather-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 12px; text-align: center;">
+                            <div style="font-size: 24px; margin-bottom: 5px;">🌡️</div>
+                            <div style="font-size: 18px; font-weight: bold;" id="currentTemp">--°C</div>
+                            <div style="font-size: 14px; opacity: 0.9;">Temperature</div>
+                        </div>
+                        
+                        <div class="weather-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 20px; border-radius: 12px; text-align: center;">
+                            <div style="font-size: 24px; margin-bottom: 5px;">💧</div>
+                            <div style="font-size: 18px; font-weight: bold;" id="currentHumidity">--%</div>
+                            <div style="font-size: 14px; opacity: 0.9;">Humidity</div>
+                        </div>
+                        
+                        <div class="weather-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; padding: 20px; border-radius: 12px; text-align: center;">
+                            <div style="font-size: 24px; margin-bottom: 5px;">📍</div>
+                            <div style="font-size: 16px; font-weight: bold;" id="currentLocation">Loading...</div>
+                            <div style="font-size: 14px; opacity: 0.9;">Location</div>
+                        </div>
+                        
+                        <div class="weather-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white; padding: 20px; border-radius: 12px; text-align: center;">
+                            <div style="font-size: 24px; margin-bottom: 5px;">🌤️</div>
+                            <div style="font-size: 16px; font-weight: bold;" id="weatherDescription">--</div>
+                            <div style="font-size: 14px; opacity: 0.9;">Conditions</div>
+                        </div>
+                    </div>
+                    
+                    <div class="weather-controls" style="text-align: center; margin-top: 15px;">
+                        <button type="button" class="btn btn-primary" onclick="refreshWeather()" style="margin-right: 10px;">
+                            🔄 Refresh Weather
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="getUserLocation()">
+                            📍 Use My Location
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="weather-loading" id="weatherLoading" style="text-align: center; padding: 30px;">
+                    <div style="font-size: 24px; margin-bottom: 10px;">🌤️</div>
+                    <div>Loading weather data...</div>
+                    <button type="button" class="btn btn-primary" onclick="loadWeatherData()" style="margin-top: 15px;">
+                        Load Weather Data
+                    </button>
+                </div>
+                
+                <!-- Hidden weather data fields for form submission -->
+                <input type="hidden" id="weatherTemperature" name="weather_temperature">
+                <input type="hidden" id="weatherHumidity" name="weather_humidity">
+                <input type="hidden" id="weatherLocation" name="weather_location">
+                <input type="hidden" id="weatherDescription" name="weather_description">
+                <input type="hidden" id="weatherLatitude" name="weather_latitude">
+                <input type="hidden" id="weatherLongitude" name="weather_longitude">
+            </div>
         </form>
         
         <div id="message" class="message"></div>
@@ -1162,6 +1700,11 @@
                                 <div class="model-breakdown">
                                     <small>ML: <span id="mlStressScore">0.0</span> | Rule: <span id="ruleStressScore">0.0</span></small>
                                 </div>
+                                <!-- Clock-in Status Indicator -->
+                                <div class="clock-in-status" id="stressClockInStatus">
+                                    <div class="status-icon">⏳</div>
+                                    <div class="status-text">Waiting for clock-in...</div>
+                                </div>
                             </div>
                         </div>
                         
@@ -1180,6 +1723,11 @@
                                 </div>
                                 <div class="model-breakdown">
                                     <small>ML: <span id="mlFatigueScore">0.0</span> | Rule: <span id="ruleFatigueScore">0.0</span></small>
+                                </div>
+                                <!-- Clock-in Status Indicator -->
+                                <div class="clock-in-status" id="fatigueClockInStatus">
+                                    <div class="status-icon">⏳</div>
+                                    <div class="status-text">Waiting for clock-in...</div>
                                 </div>
                             </div>
                         </div>
@@ -1288,8 +1836,10 @@
         let timerInterval = null;
         let isTimerRunning = false;
         const OPTIMAL_READING_TIME = 30000; // 30 seconds in milliseconds
-        const STABILIZATION_TIME = 15000; // 15 seconds for initial stabilization
-        const CLOCK_IN_READY_TIME = 15000; // 15 seconds - when clock in becomes available
+        const STABILIZATION_TIME = 5000; // 5 seconds for initial stabilization
+        const CLOCK_IN_READY_TIME = 5000; // 5 seconds - when clock in becomes available
+        const AUTO_CLOCK_IN_TIME = 5000; // 5 seconds - automatic clock in
+        let autoClockInTriggered = false;
 
         // Camera Controls
         document.getElementById('startCamera').addEventListener('click', startCamera);
@@ -1818,6 +2368,10 @@
             
             analysisStartTime = Date.now();
             isTimerRunning = true;
+            autoClockInTriggered = false; // Reset auto clock-in flag
+            
+            // Initialize clock-in status to waiting
+            updateClockInStatus('waiting');
             
             // Show timer
             document.getElementById('analysisTimer').style.display = 'block';
@@ -1855,29 +2409,91 @@
                 statusElement.textContent = `Stabilizing readings... Clock in available in ${remainingSeconds} seconds.`;
                 statusElement.className = 'timer-status timer-stabilizing';
                 clockInBtn.style.display = 'none';
-            } else if (elapsed < OPTIMAL_READING_TIME) {
-                // Clock in is now available
-                statusElement.textContent = '✅ Clock in available! Your readings are stable and ready.';
-                statusElement.className = 'timer-status timer-ready';
-                clockInBtn.style.display = 'inline-block';
-                clockInBtn.style.background = '#28a745';
-                clockInBtn.style.color = 'white';
-                clockInBtn.style.animation = 'pulse 1.5s infinite';
-            } else {
-                // Optimal time reached
-                statusElement.textContent = '🎯 Optimal reading time reached! Clock in for most accurate results.';
-                statusElement.className = 'timer-status timer-ready';
-                clockInBtn.style.display = 'inline-block';
                 
-                // Highlight the clock in button more prominently
-                clockInBtn.style.background = '#ff6b6b';
-                clockInBtn.style.color = 'white';
-                clockInBtn.style.animation = 'pulse 1s infinite';
-                clockInBtn.style.fontWeight = 'bold';
+                // Only show waiting status if not already clocked in
+                if (!autoClockInTriggered) {
+                    updateClockInStatus('waiting');
+                }
+            } else if (elapsed >= CLOCK_IN_READY_TIME) {
+                // Auto clock-in triggers immediately at 5 seconds
+                if (!autoClockInTriggered && facialAnalysisData) {
+                    autoClockIn();
+                }
+                
+                // Update status based on whether auto clock-in happened
+                if (autoClockInTriggered) {
+                    statusElement.textContent = '🤖 Auto-clock in completed! Values locked in.';
+                    statusElement.className = 'timer-status timer-ready';
+                    clockInBtn.style.display = 'inline-block';
+                    clockInBtn.style.background = '#17a2b8';
+                    clockInBtn.style.color = 'white';
+                    clockInBtn.style.animation = 'none';
+                } else {
+                    statusElement.textContent = '✅ Clock in available! Your readings are stable and ready.';
+                    statusElement.className = 'timer-status timer-ready';
+                    clockInBtn.style.display = 'inline-block';
+                    clockInBtn.style.background = '#28a745';
+                    clockInBtn.style.color = 'white';
+                    clockInBtn.style.animation = 'pulse 1.5s infinite';
+                }
             }
         }
         
-        // Clock in function - record the current reading
+        // Auto clock-in function
+        function autoClockIn() {
+            if (!autoClockInTriggered && facialAnalysisData) {
+                autoClockInTriggered = true;
+                
+                const elapsed = Date.now() - analysisStartTime;
+                const seconds = Math.floor(elapsed / 1000);
+                
+                // Add timestamp to the analysis data
+                facialAnalysisData.clockInTime = seconds;
+                facialAnalysisData.clockInTimestamp = new Date().toISOString();
+                facialAnalysisData.autoClockIn = true; // Mark as auto-clock in
+                
+                // Save the clocked-in stress and fatigue values
+                const clockedStress = facialAnalysisData.stressLevel;
+                const clockedFatigue = facialAnalysisData.fatigueLevel;
+                
+                // Get the level text for storage
+                const clockedStressLevel = getStressLevel(clockedStress);
+                const clockedFatigueLevel = getFatigueLevel(clockedFatigue);
+                
+                // Store the clocked-in values in the facialAnalysisData
+                facialAnalysisData.clockedStressLevel = clockedStress;
+                facialAnalysisData.clockedFatigueLevel = clockedFatigue;
+                facialAnalysisData.clockedStressLevelText = clockedStressLevel;
+                facialAnalysisData.clockedFatigueLevelText = clockedFatigueLevel;
+                
+                // Update visual clock-in status indicators
+                updateClockInStatus('auto-clocked', clockedStressLevel, clockedFatigueLevel);
+                
+                // Show auto clock-in message
+                showSuccessMessage(`🤖 Auto-clock in at ${seconds}s! Stress: ${clockedStressLevel}, Fatigue: ${clockedFatigueLevel}`);
+                
+                // Update status
+                document.getElementById('timerStatus').textContent = `Auto-clock in completed at ${seconds}s. You can continue monitoring or submit your assessment.`;
+                document.getElementById('timerStatus').className = 'timer-status timer-ready';
+                
+                // Update the clock-in button to show auto-clock in status
+                const clockInBtn = document.getElementById('clockInBtn');
+                clockInBtn.disabled = true;
+                clockInBtn.textContent = '🤖 Auto-Clocked In';
+                clockInBtn.style.background = '#17a2b8';
+                clockInBtn.style.animation = 'none';
+                
+                console.log('🤖 Auto-clock in completed:', {
+                    time: seconds,
+                    stress_level: clockedStressLevel,
+                    fatigue_level: clockedFatigueLevel,
+                    stress_score: clockedStress,
+                    fatigue_score: clockedFatigue
+                });
+            }
+        }
+
+        // Manual clock in function - record the current reading
         function clockInReading() {
             if (!facialAnalysisData) {
                 showErrorMessage('No analysis data available. Please wait for readings to stabilize.');
@@ -1890,6 +2506,7 @@
             // Add timestamp to the analysis data
             facialAnalysisData.clockInTime = seconds;
             facialAnalysisData.clockInTimestamp = new Date().toISOString();
+            facialAnalysisData.autoClockIn = false; // Mark as manual clock in
             
             // Save the clocked-in stress and fatigue values
             const clockedStress = facialAnalysisData.stressLevel;
@@ -1899,25 +2516,36 @@
             const clockedStressLevel = getStressLevel(clockedStress);
             const clockedFatigueLevel = getFatigueLevel(clockedFatigue);
             
-            // Store the clocked-in values in the facialAnalysisData
-            facialAnalysisData.clockedStressLevel = clockedStress;
-            facialAnalysisData.clockedFatigueLevel = clockedFatigue;
-            facialAnalysisData.clockedStressLevelText = clockedStressLevel;
-            facialAnalysisData.clockedFatigueLevelText = clockedFatigueLevel;
-            
-            // Show success message with timing info
-            showSuccessMessage(`✅ Reading recorded at ${seconds} seconds! Stress: ${clockedStressLevel}, Fatigue: ${clockedFatigueLevel}`);
+                            // Store the clocked-in values in the facialAnalysisData
+                facialAnalysisData.clockedStressLevel = clockedStress;
+                facialAnalysisData.clockedFatigueLevel = clockedFatigue;
+                facialAnalysisData.clockedStressLevelText = clockedStressLevel;
+                facialAnalysisData.clockedFatigueLevelText = clockedFatigueLevel;
+                
+                // Update visual clock-in status indicators
+                updateClockInStatus('clocked-in', clockedStressLevel, clockedFatigueLevel);
+                
+                // Show success message with timing info
+                showSuccessMessage(`✅ Manual clock in at ${seconds}s! Stress: ${clockedStressLevel}, Fatigue: ${clockedFatigueLevel}`);
             
             // Update status
-            document.getElementById('timerStatus').textContent = `Reading recorded at ${seconds}s. You can continue monitoring or submit your assessment.`;
+            document.getElementById('timerStatus').textContent = `Manual clock in completed at ${seconds}s. You can continue monitoring or submit your assessment.`;
             document.getElementById('timerStatus').className = 'timer-status timer-ready';
             
             // Disable the clock-in button after successful recording
             const clockInBtn = document.getElementById('clockInBtn');
             clockInBtn.disabled = true;
-            clockInBtn.textContent = '✅ Reading Recorded';
+            clockInBtn.textContent = '✅ Manually Clocked In';
             clockInBtn.style.background = '#6c757d';
             clockInBtn.style.animation = 'none';
+            
+            console.log('✅ Manual clock in completed:', {
+                time: seconds,
+                stress_level: clockedStressLevel,
+                fatigue_level: clockedFatigueLevel,
+                stress_score: clockedStress,
+                fatigue_score: clockedFatigue
+            });
         }
         
         // Stop timer
@@ -1982,7 +2610,7 @@
                     updateAnalysisFromLandmarks(result);
                     
                     console.log(`✅ Face detected: ${result.num_landmarks} landmarks, EAR: ${result.ear.toFixed(3)}`);
-            } else {
+                    } else {
                     console.log('No face detected or server error:', result.message || 'Unknown error');
                     // Don't clear canvas - let the video frame persist
                     // Landmarks will fade away naturally when no face is detected
@@ -2051,7 +2679,7 @@
                         
                         if (i === 0) {
                             ctx.moveTo(x, y);
-                        } else {
+                } else {
                             ctx.lineTo(x, y);
                         }
                     }
@@ -2490,6 +3118,12 @@
             // Clear facial analysis data
             facialAnalysisData = null;
             
+            // Reset auto clock-in state
+            autoClockInTriggered = false;
+            
+            // Reset clock-in status indicators
+            updateClockInStatus('waiting');
+            
             // Stop timer
             stopAnalysisTimer();
             
@@ -2532,8 +3166,22 @@
                 symptoms: Array.from(document.querySelectorAll('input[name="symptoms"]:checked')).map(cb => cb.value),
                 medical_history: Array.from(document.querySelectorAll('input[name="medical_history"]:checked')).map(cb => cb.value),
                 risk_factors: Array.from(document.querySelectorAll('input[name="risk_factors"]:checked')).map(cb => cb.value),
-                facial_analysis: facialAnalysisData
+                facial_analysis: facialAnalysisData,
+                weather_data: {
+                    temperature: document.getElementById('weatherTemperature').value,
+                    humidity: document.getElementById('weatherHumidity').value,
+                    location: document.getElementById('weatherLocation').value,
+                    description: document.getElementById('weatherDescription').value,
+                    latitude: document.getElementById('weatherLatitude').value,
+                    longitude: document.getElementById('weatherLongitude').value
+                }
             };
+
+            // Show loading state
+            const submitBtn = document.querySelector('.submit-btn');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = 'Analyzing...';
+            submitBtn.disabled = true;
 
             fetch('/submit_demographics', {
                 method: 'POST',
@@ -2545,13 +3193,313 @@
                 if (data.success) {
                     showSuccessMessage('Assessment submitted successfully!');
                     loadStoredData();
-                } else {
+                    
+                    // Display heatstroke prediction results
+                    if (data.heatstroke_prediction && !data.heatstroke_prediction.error) {
+                        displayHeatstrokeResults(data.heatstroke_prediction);
+                    } else if (data.heatstroke_prediction && data.heatstroke_prediction.error) {
+                        showErrorMessage('Heatstroke analysis error: ' + data.heatstroke_prediction.error);
+                    }
+            } else {
                     showErrorMessage('Error submitting assessment: ' + data.error);
                 }
             })
             .catch(error => {
                 showErrorMessage('Error submitting assessment: ' + error);
+            })
+            .finally(() => {
+                // Reset button state
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
             });
+        }
+
+        // Display heatstroke prediction results
+        function displayHeatstrokeResults(prediction) {
+            // Create or update results container
+            let resultsContainer = document.getElementById('heatstrokeResults');
+            if (!resultsContainer) {
+                resultsContainer = document.createElement('div');
+                resultsContainer.id = 'heatstrokeResults';
+                resultsContainer.className = 'heatstroke-results';
+                document.querySelector('.demographics-container').appendChild(resultsContainer);
+            }
+
+            const riskLevel = prediction.risk_level || 'Unknown';
+            const probability = prediction.heatstroke_probability || 0;
+            const isHighRisk = prediction.heatstroke_prediction || false;
+            
+            // Determine colors and icons based on risk
+            let riskColor, riskIcon, riskClass;
+            if (isHighRisk || probability > 0.7) {
+                riskColor = '#dc3545';
+                riskIcon = '🔥';
+                riskClass = 'high-risk';
+            } else if (probability > 0.3) {
+                riskColor = '#ffc107';
+                riskIcon = '⚠️';
+                riskClass = 'moderate-risk';
+            } else {
+                riskColor = '#28a745';
+                riskIcon = '✅';
+                riskClass = 'low-risk';
+            }
+
+            resultsContainer.innerHTML = `
+                <div class="results-header">
+                    <h3>${riskIcon} Heatstroke Risk Assessment Results</h3>
+                    <div class="timestamp">Analysis completed at ${new Date().toLocaleTimeString()}</div>
+                    </div>
+                
+                <div class="results-grid">
+                    <div class="result-card ${riskClass}">
+                        <div class="result-icon">${riskIcon}</div>
+                        <div class="result-title">Risk Level</div>
+                        <div class="result-value">${riskLevel.toUpperCase()}</div>
+                        <div class="result-description">
+                            ${isHighRisk ? 'High risk of heatstroke detected' : 'Low risk of heatstroke'}
+                        </div>
+                        </div>
+                    
+                    <div class="result-card">
+                        <div class="result-icon">📊</div>
+                        <div class="result-title">Risk Probability</div>
+                        <div class="result-value">${(probability * 100).toFixed(1)}%</div>
+                        <div class="result-description">
+                            Probability of heatstroke based on your data
+                        </div>
+                        </div>
+                </div>
+                
+                <div class="analysis-details">
+                    <h4>Analysis Details</h4>
+                    <div class="details-grid">
+                        <div class="detail-item">
+                            <span class="detail-label">Age:</span>
+                            <span class="detail-value">${document.getElementById('age').value} years</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Gender:</span>
+                            <span class="detail-value">${document.getElementById('gender').value}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Temperature:</span>
+                            <span class="detail-value">${document.getElementById('weatherTemperature').value}°C</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Location:</span>
+                            <span class="detail-value">${document.getElementById('weatherLocation').value}</span>
+                        </div>
+                        ${facialAnalysisData && facialAnalysisData.stress_level ? `
+                        <div class="detail-item">
+                            <span class="detail-label">Stress Level:</span>
+                            <span class="detail-value">${facialAnalysisData.stress_level}</span>
+                        </div>
+                        ` : ''}
+                        ${facialAnalysisData && facialAnalysisData.fatigue_level ? `
+                        <div class="detail-item">
+                            <span class="detail-label">Fatigue Level:</span>
+                            <span class="detail-value">${facialAnalysisData.fatigue_level}</span>
+                        </div>
+                        ` : ''}
+                        </div>
+                    </div>
+                    
+                <div class="recommendations-section">
+                    <h4>Recommendations</h4>
+                    <div class="recommendation-list">
+                        ${generateHeatstrokeRecommendations(probability, isHighRisk)}
+                    </div>
+                </div>
+                
+                <div class="action-buttons">
+                    <button type="button" class="btn btn-primary" onclick="window.print()">
+                        📄 Print Results
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="hideHeatstrokeResults()">
+                        ✕ Close Results
+                    </button>
+                </div>
+            `;
+
+            // Scroll to results
+            resultsContainer.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Generate heatstroke recommendations
+        function generateHeatstrokeRecommendations(probability, isHighRisk) {
+            let recommendations = [];
+            
+            if (isHighRisk || probability > 0.7) {
+                recommendations.push('🚨 <strong>IMMEDIATE ACTION REQUIRED:</strong> Seek medical attention immediately');
+                recommendations.push('💧 Drink plenty of water and move to a cool environment');
+                recommendations.push('❄️ Apply cool compresses to reduce body temperature');
+                recommendations.push('📞 Contact emergency services if symptoms worsen');
+                
+                // Trigger emergency alert for high risk
+                triggerEmergencyAlert();
+            } else if (probability > 0.3) {
+                recommendations.push('⚠️ <strong>MODERATE RISK:</strong> Take precautions to prevent heatstroke');
+                recommendations.push('💧 Stay hydrated and avoid prolonged sun exposure');
+                recommendations.push('🌡️ Monitor your body temperature regularly');
+                recommendations.push('🏠 Stay in air-conditioned environments when possible');
+            } else {
+                recommendations.push('✅ <strong>LOW RISK:</strong> Continue with normal activities');
+                recommendations.push('💧 Maintain good hydration habits');
+                recommendations.push('🌤️ Be aware of weather conditions during outdoor activities');
+                recommendations.push('📱 Monitor for any changes in symptoms');
+            }
+            
+            return recommendations.map(rec => `<li>${rec}</li>`).join('');
+        }
+
+        // Emergency alert function
+        function triggerEmergencyAlert() {
+            // Create emergency alert modal
+            const emergencyModal = document.createElement('div');
+            emergencyModal.id = 'emergencyModal';
+            emergencyModal.className = 'emergency-modal';
+            emergencyModal.innerHTML = `
+                <div class="emergency-content">
+                    <div class="emergency-header">
+                        <div class="emergency-icon">🚨</div>
+                        <h2>EMERGENCY ALERT</h2>
+                        <div class="emergency-subtitle">HIGH HEATSTROKE RISK DETECTED</div>
+                                </div>
+                    
+                    <div class="emergency-body">
+                        <p><strong>Your heatstroke risk assessment indicates HIGH RISK.</strong></p>
+                        <p>We are automatically contacting emergency services for you.</p>
+                        
+                        <div class="emergency-call-status">
+                            <div class="call-animation">
+                                <div class="phone-icon">📞</div>
+                                <div class="call-text">Calling Emergency Number...</div>
+                                    </div>
+                            <div class="call-number">555-EMERGENCY</div>
+                                    </div>
+                        
+                        <div class="emergency-actions">
+                            <p><strong>While we connect you to emergency services:</strong></p>
+                            <ul>
+                                <li>🚰 Drink cool water immediately</li>
+                                <li>❄️ Move to a cool, shaded area</li>
+                                <li>👕 Remove excess clothing</li>
+                                <li>🌬️ Use fans or air conditioning</li>
+                                <li>🛌 Lie down with legs elevated</li>
+                            </ul>
+                                    </div>
+                                </div>
+                    
+                    <div class="emergency-footer">
+                        <button class="btn btn-danger" onclick="confirmEmergencyCall()">
+                            ✅ Confirm Emergency Call
+                        </button>
+                        <button class="btn btn-secondary" onclick="dismissEmergencyAlert()">
+                            ❌ Dismiss (Not Recommended)
+                        </button>
+                                </div>
+                            </div>
+                        `;
+
+            // Add to page
+            document.body.appendChild(emergencyModal);
+            
+            // Auto-dismiss after 30 seconds if not manually dismissed
+            setTimeout(() => {
+                if (document.getElementById('emergencyModal')) {
+                    dismissEmergencyAlert();
+                }
+            }, 30000);
+            
+            // Play alert sound if available
+            playEmergencySound();
+        }
+
+        // Confirm emergency call
+        function confirmEmergencyCall() {
+            const modal = document.getElementById('emergencyModal');
+            if (modal) {
+                modal.querySelector('.emergency-body').innerHTML = `
+                    <div class="call-confirmed">
+                        <div class="success-icon">✅</div>
+                        <h3>Emergency Call Confirmed</h3>
+                        <p>Emergency services have been notified.</p>
+                        <p><strong>Estimated response time: 5-10 minutes</strong></p>
+                        <div class="emergency-number">📞 555-EMERGENCY</div>
+                    </div>
+                `;
+                
+                modal.querySelector('.emergency-footer').innerHTML = `
+                    <button class="btn btn-success" onclick="dismissEmergencyAlert()">
+                        ✅ Understood
+                    </button>
+                `;
+            }
+        }
+
+        // Dismiss emergency alert
+        function dismissEmergencyAlert() {
+            const modal = document.getElementById('emergencyModal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        // Update clock-in status indicators
+        function updateClockInStatus(status, stressLevel, fatigueLevel) {
+            const stressStatus = document.getElementById('stressClockInStatus');
+            const fatigueStatus = document.getElementById('fatigueClockInStatus');
+            
+            if (status === 'waiting') {
+                stressStatus.className = 'clock-in-status waiting';
+                fatigueStatus.className = 'clock-in-status waiting';
+                stressStatus.innerHTML = '<div class="status-icon">⏳</div><div class="status-text">Waiting for clock-in...</div>';
+                fatigueStatus.innerHTML = '<div class="status-icon">⏳</div><div class="status-text">Waiting for clock-in...</div>';
+            } else if (status === 'clocked-in') {
+                stressStatus.className = 'clock-in-status clocked-in';
+                fatigueStatus.className = 'clock-in-status clocked-in';
+                stressStatus.innerHTML = `<div class="status-icon">✅</div><div class="status-text">Locked: ${stressLevel}</div>`;
+                fatigueStatus.innerHTML = `<div class="status-icon">✅</div><div class="status-text">Locked: ${fatigueLevel}</div>`;
+            } else if (status === 'auto-clocked') {
+                stressStatus.className = 'clock-in-status auto-clocked';
+                fatigueStatus.className = 'clock-in-status auto-clocked';
+                stressStatus.innerHTML = `<div class="status-icon">🤖</div><div class="status-text">Auto-locked: ${stressLevel}</div>`;
+                fatigueStatus.innerHTML = `<div class="status-icon">🤖</div><div class="status-text">Auto-locked: ${fatigueLevel}</div>`;
+            }
+        }
+
+        // Play emergency sound (if browser supports it)
+        function playEmergencySound() {
+            try {
+                // Create a simple beep sound using Web Audio API
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+                oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1);
+                oscillator.frequency.setValueAtTime(800, audioContext.currentTime + 0.2);
+                
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.3);
+            } catch (error) {
+                console.log('Audio not supported or blocked by browser');
+            }
+        }
+
+        // Hide heatstroke results
+        function hideHeatstrokeResults() {
+            const resultsContainer = document.getElementById('heatstrokeResults');
+            if (resultsContainer) {
+                resultsContainer.remove();
+            }
         }
 
         // Load stored data
@@ -2588,10 +3536,178 @@
             }, 5000);
         }
 
+        // Weather data functions
+        let currentWeatherData = null;
+
+        // Load weather data
+        async function loadWeatherData() {
+            const loadingDiv = document.getElementById('weatherLoading');
+            const containerDiv = document.getElementById('weatherContainer');
+            
+            loadingDiv.innerHTML = `
+                <div style="font-size: 24px; margin-bottom: 10px;">🌤️</div>
+                <div>Loading weather data...</div>
+            `;
+            
+            try {
+                const response = await fetch('/api/weather');
+                const data = await response.json();
+                
+                if (data.success && data.weather) {
+                    currentWeatherData = data.weather;
+                    displayWeatherData(data.weather);
+                    
+                    // Update hidden form fields
+                    document.getElementById('weatherTemperature').value = data.weather.temperature || '';
+                    document.getElementById('weatherHumidity').value = data.weather.humidity || '';
+                    document.getElementById('weatherLocation').value = data.weather.location || '';
+                    document.getElementById('weatherDescription').value = data.weather.description || '';
+                    document.getElementById('weatherLatitude').value = data.weather.latitude || '';
+                    document.getElementById('weatherLongitude').value = data.weather.longitude || '';
+                    
+                    containerDiv.style.display = 'block';
+                    loadingDiv.style.display = 'none';
+                    
+                    showSuccessMessage('Weather data loaded successfully!');
+                } else {
+                    throw new Error(data.error || 'Failed to load weather data');
+                }
+            } catch (error) {
+                console.error('Weather loading error:', error);
+                loadingDiv.innerHTML = `
+                    <div style="font-size: 24px; margin-bottom: 10px;">⚠️</div>
+                    <div>Weather data unavailable</div>
+                    <div style="font-size: 12px; color: #666; margin-top: 5px;">${error.message}</div>
+                    <button type="button" class="btn btn-primary" onclick="loadWeatherData()" style="margin-top: 15px;">
+                        Retry
+                    </button>
+                `;
+            }
+        }
+
+        // Display weather data
+        function displayWeatherData(weather) {
+            if (weather.temperature !== null) {
+                document.getElementById('currentTemp').textContent = `${weather.temperature.toFixed(1)}°C`;
+            }
+            
+            if (weather.humidity !== null) {
+                document.getElementById('currentHumidity').textContent = `${weather.humidity}%`;
+            }
+            
+            if (weather.location) {
+                document.getElementById('currentLocation').textContent = weather.location;
+            }
+            
+            if (weather.description) {
+                document.getElementById('weatherDescription').textContent = weather.description;
+            }
+        }
+
+        // Refresh weather data
+        async function refreshWeather() {
+            if (!currentWeatherData) {
+                await loadWeatherData();
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/weather');
+                const data = await response.json();
+                
+                if (data.success && data.weather) {
+                    currentWeatherData = data.weather;
+                    displayWeatherData(data.weather);
+                    
+                    // Update hidden form fields
+                    document.getElementById('weatherTemperature').value = data.weather.temperature || '';
+                    document.getElementById('weatherHumidity').value = data.weather.humidity || '';
+                    document.getElementById('weatherLocation').value = data.weather.location || '';
+                    document.getElementById('weatherDescription').value = data.weather.description || '';
+                    document.getElementById('weatherLatitude').value = data.weather.latitude || '';
+                    document.getElementById('weatherLongitude').value = data.weather.longitude || '';
+                    
+                    showSuccessMessage('Weather data refreshed!');
+                } else {
+                    throw new Error(data.error || 'Failed to refresh weather data');
+                }
+                } catch (error) {
+                console.error('Weather refresh error:', error);
+                showErrorMessage('Failed to refresh weather data: ' + error.message);
+            }
+        }
+
+        // Get user location using browser geolocation
+        function getUserLocation() {
+            if (!navigator.geolocation) {
+                showErrorMessage('Geolocation is not supported by this browser');
+                return;
+            }
+            
+            showSuccessMessage('Getting your location...');
+            
+            navigator.geolocation.getCurrentPosition(
+                async function(position) {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    
+                    try {
+                        const response = await fetch(`/api/weather?lat=${lat}&lon=${lon}`);
+                        const data = await response.json();
+                        
+                        if (data.success && data.weather) {
+                            currentWeatherData = data.weather;
+                            displayWeatherData(data.weather);
+                            
+                            // Update hidden form fields
+                            document.getElementById('weatherTemperature').value = data.weather.temperature || '';
+                            document.getElementById('weatherHumidity').value = data.weather.humidity || '';
+                            document.getElementById('weatherLocation').value = data.weather.location || '';
+                            document.getElementById('weatherDescription').value = data.weather.description || '';
+                            document.getElementById('weatherLatitude').value = data.weather.latitude || '';
+                            document.getElementById('weatherLongitude').value = data.weather.longitude || '';
+                            
+                            document.getElementById('weatherContainer').style.display = 'block';
+                            document.getElementById('weatherLoading').style.display = 'none';
+                            
+                            showSuccessMessage('Location-based weather data loaded!');
+                        } else {
+                            throw new Error(data.error || 'Failed to get location-based weather');
+                        }
+                } catch (error) {
+                        console.error('Location weather error:', error);
+                        showErrorMessage('Failed to get location-based weather: ' + error.message);
+                    }
+                },
+                function(error) {
+                    console.error('Geolocation error:', error);
+                    let errorMessage = 'Unable to get your location';
+                    
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMessage = 'Location permission denied. Please allow location access.';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMessage = 'Location information unavailable.';
+                            break;
+                        case error.TIMEOUT:
+                            errorMessage = 'Location request timed out.';
+                            break;
+                    }
+                    
+                    showErrorMessage(errorMessage);
+                }
+            );
+        }
+
         // Initialize when page loads
         document.addEventListener('DOMContentLoaded', function() {
-
             loadStoredData();
+            
+            // Auto-load weather data after a short delay
+            setTimeout(() => {
+                loadWeatherData();
+            }, 1000);
         });
 
     </script>

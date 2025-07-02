@@ -21,6 +21,171 @@ from sklearn.ensemble import RandomForestClassifier, GradientBoostingRegressor
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 import warnings
 warnings.filterwarnings('ignore')
+import requests
+
+# Free weather and location APIs (no API keys required)
+WEATHER_BASE_URL = "https://api.open-meteo.com/v1/forecast"
+LOCATION_BASE_URL = "http://ip-api.com/json"
+
+def get_weather_data(lat=None, lon=None, city=None):
+    """
+    Get current weather data for a location using free Open-Meteo API
+    Args:
+        lat: latitude (optional)
+        lon: longitude (optional) 
+        city: city name (optional)
+    Returns:
+        dict: weather data including temperature, location, etc.
+    """
+    try:
+        # If city is provided, we need to geocode it first
+        if city and not lat and not lon:
+            # Use a free geocoding service
+            geocode_url = f"https://geocoding-api.open-meteo.com/v1/search?name={city}&count=1"
+            geocode_response = requests.get(geocode_url, timeout=10)
+            if geocode_response.status_code == 200:
+                geocode_data = geocode_response.json()
+                if geocode_data.get('results'):
+                    lat = geocode_data['results'][0]['latitude']
+                    lon = geocode_data['results'][0]['longitude']
+                    city_name = geocode_data['results'][0]['name']
+                else:
+                    # Fallback to default location
+                    lat = 40.7128
+                    lon = -74.0060
+                    city_name = "New York"
+            else:
+                # Fallback to default location
+                lat = 40.7128
+                lon = -74.0060
+                city_name = "New York"
+        elif not lat and not lon:
+            # Default to New York if no coordinates provided
+            lat = 40.7128
+            lon = -74.0060
+            city_name = "New York"
+        else:
+            # Try to get location name from coordinates using reverse geocoding
+            try:
+                reverse_geocode_url = f"https://geocoding-api.open-meteo.com/v1/search?latitude={lat}&longitude={lon}&count=1"
+                reverse_response = requests.get(reverse_geocode_url, timeout=5)
+                if reverse_response.status_code == 200:
+                    reverse_data = reverse_response.json()
+                    if reverse_data.get('results'):
+                        city_name = reverse_data['results'][0]['name']
+                    else:
+                        city_name = f"Location ({lat:.2f}, {lon:.2f})"
+                else:
+                    city_name = f"Location ({lat:.2f}, {lon:.2f})"
+            except:
+                city_name = f"Location ({lat:.2f}, {lon:.2f})"
+        
+        # Get weather data from Open-Meteo API
+        params = {
+            'latitude': lat,
+            'longitude': lon,
+            'current': 'temperature_2m,relative_humidity_2m,apparent_temperature,pressure_msl,weather_code',
+            'timezone': 'auto'
+        }
+        
+        response = requests.get(WEATHER_BASE_URL, params=params, timeout=10)
+        response.raise_for_status()
+        
+        weather_data = response.json()
+        current = weather_data['current']
+        
+        # Map weather codes to descriptions
+        weather_descriptions = {
+            0: "Clear sky",
+            1: "Mainly clear",
+            2: "Partly cloudy",
+            3: "Overcast",
+            45: "Foggy",
+            48: "Depositing rime fog",
+            51: "Light drizzle",
+            53: "Moderate drizzle",
+            55: "Dense drizzle",
+            61: "Slight rain",
+            63: "Moderate rain",
+            65: "Heavy rain",
+            71: "Slight snow",
+            73: "Moderate snow",
+            75: "Heavy snow",
+            77: "Snow grains",
+            80: "Slight rain showers",
+            81: "Moderate rain showers",
+            82: "Violent rain showers",
+            85: "Slight snow showers",
+            86: "Heavy snow showers",
+            95: "Thunderstorm",
+            96: "Thunderstorm with slight hail",
+            99: "Thunderstorm with heavy hail"
+        }
+        
+        weather_code = current.get('weather_code', 0)
+        weather_description = weather_descriptions.get(weather_code, "Unknown")
+        
+        return {
+            'temperature': current.get('temperature_2m'),
+            'feels_like': current.get('apparent_temperature'),
+            'humidity': current.get('relative_humidity_2m'),
+            'pressure': current.get('pressure_msl'),
+            'description': weather_description,
+            'location': city_name,
+            'country': 'Unknown',  # Open-Meteo doesn't provide country info
+            'latitude': lat,
+            'longitude': lon,
+            'timestamp': datetime.now().isoformat()
+        }
+        
+    except requests.RequestException as e:
+        print(f"⚠️ Weather API error: {e}")
+        return {
+            'error': 'Weather data unavailable',
+            'temperature': None,
+            'location': 'Unknown',
+            'timestamp': datetime.now().isoformat()
+        }
+    except Exception as e:
+        print(f"⚠️ Weather data processing error: {e}")
+        return {
+            'error': 'Weather data processing failed',
+            'temperature': None,
+            'location': 'Unknown',
+            'timestamp': datetime.now().isoformat()
+        }
+
+def get_user_location():
+    """
+    Get user's location using free IP geolocation service
+    Returns:
+        dict: location data
+    """
+    try:
+        # Use free IP geolocation service
+        response = requests.get(LOCATION_BASE_URL, timeout=5)
+        if response.status_code == 200:
+            data = response.json()
+            location_data = {
+                'city': data.get('city', 'Unknown'),
+                'region': data.get('regionName', 'Unknown'),
+                'country': data.get('country', 'Unknown'),
+                'lat': data.get('lat'),
+                'lon': data.get('lon')
+            }
+            print(f"🌍 IP Location detected: {location_data['city']}, {location_data['region']}, {location_data['country']}")
+            return location_data
+    except Exception as e:
+        print(f"⚠️ Location detection error: {e}")
+    
+    print("⚠️ Using fallback location data")
+    return {
+        'city': 'Unknown',
+        'region': 'Unknown', 
+        'country': 'Unknown',
+        'lat': None,
+        'lon': None
+    }
 
 # MediaPipe disabled for camera compatibility
 MEDIAPIPE_AVAILABLE = False
@@ -1053,6 +1218,7 @@ def submit_demographics():
                 'medical_history': data.get('medical_history', []),
                 'risk_factors': data.get('risk_factors', []),
                 'facial_analysis': data.get('facial_analysis'),
+                'weather_data': data.get('weather_data', {}),
                 'timestamp': time.time(),
                 'date': datetime.now().strftime('%d/%m/%Y, %H:%M:%S')
             }
@@ -1906,7 +2072,7 @@ def generate_advanced_recommendations(stress_score, fatigue_score, demographic_d
 
 # --- Heatstroke Predictor Integration ---
 import sys
-sys.path.append('../CSV datasets')
+sys.path.append('../CSV_datasets')
 sys.path.append('../BPM')  # Add BPM directory to path
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import LabelEncoder, StandardScaler
@@ -1985,8 +2151,8 @@ class DashboardHeatstrokePredictor:
     def _initialize(self):
         # Only train once and cache
         try:
-            train_df = pd.read_csv('../CSV datasets/health_heatstroke_train_2000_temp (1).csv')
-            test_df = pd.read_csv('../CSV datasets/health_heatstroke_test_2000_temp (1).csv')
+            train_df = pd.read_csv('../CSV_datasets/health_heatstroke_train_2000_temp (1).csv')
+            test_df = pd.read_csv('../CSV_datasets/health_heatstroke_test_2000_temp (1).csv')
             # --- Fix: Standardize label column name ---
             for df in [train_df, test_df]:
                 if 'heat stroke' in df.columns:
@@ -2281,105 +2447,143 @@ def test_sunstroke():
 
 @app.route('/api/face_landmarks', methods=['POST'])
 def api_face_landmarks():
-    """Get real-time face landmarks using somnolence detection"""
+    """API endpoint for face landmark detection using server-side MediaPipe"""
     try:
-        if not SOMNOLENCE_AVAILABLE:
-            return jsonify({
-                'success': False, 
-                'message': 'Somnolence detection not available',
-                'landmarks': []
-            })
-        
-        # Initialize detector if needed
-        global somnolence_detector
-        if somnolence_detector is None:
-            somnolence_detector = DrowsinessDetector()
-        
-        # Get image data from request
         data = request.get_json()
         if not data or 'image_data' not in data:
-            return jsonify({
-                'success': False,
-                'message': 'No image data provided',
-                'landmarks': []
-            })
+            return jsonify({'error': 'No image data provided'}), 400
+        
+        # Initialize somnolence detector if not already done
+        global somnolence_detector
+        if SOMNOLENCE_AVAILABLE and somnolence_detector is None:
+            try:
+                somnolence_detector = DrowsinessDetector()
+                print("✅ Somnolence detector initialized")
+            except Exception as e:
+                print(f"⚠️ Failed to initialize somnolence detector: {e}")
+                return jsonify({'error': 'Face detection not available'}), 500
+        
+        if not SOMNOLENCE_AVAILABLE or somnolence_detector is None:
+            return jsonify({'error': 'Face detection not available'}), 500
+        
+        # Process the image data
+        image_data = data['image_data']
+        
+        # Remove data URL prefix if present
+        if image_data.startswith('data:image'):
+            image_data = image_data.split(',')[1]
         
         # Decode base64 image
         import base64
         import cv2
         import numpy as np
         
-        # Remove data URL prefix if present
-        image_data = data['image_data']
-        if image_data.startswith('data:image'):
-            image_data = image_data.split(',')[1]
-        
-        # Decode base64 to image
-        image_bytes = base64.b64decode(image_data)
-        nparr = np.frombuffer(image_bytes, np.uint8)
-        frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-        
-        if frame is None:
-            return jsonify({
-                'success': False,
-                'message': 'Invalid image data',
-                'landmarks': []
-            })
-        
-        # Process frame with somnolence detector
-        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        results = somnolence_detector.face_mesh.process(rgb_frame)
-        
-        landmarks_data = []
-        if results.multi_face_landmarks:
-            # Get landmarks from the first detected face
-            face_landmarks = results.multi_face_landmarks[0]
+        try:
+            image_bytes = base64.b64decode(image_data)
+            nparr = np.frombuffer(image_bytes, np.uint8)
+            image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
             
-            # Convert landmarks to list of [x, y, z] coordinates
-            for landmark in face_landmarks.landmark:
-                landmarks_data.append({
-                    'x': landmark.x,
-                    'y': landmark.y,
-                    'z': landmark.z
+            if image is None:
+                return jsonify({'error': 'Invalid image data'}), 400
+            
+            # Get face landmarks using somnolence detector
+            landmarks = somnolence_detector.get_face_landmarks(image)
+            
+            if landmarks is not None:
+                # Convert landmarks to list format for JSON serialization
+                landmarks_list = []
+                for point in landmarks:
+                    landmarks_list.append({
+                        'x': float(point[0]),
+                        'y': float(point[1])
+                    })
+                
+                return jsonify({
+                    'success': True,
+                    'landmarks': landmarks_list,
+                    'face_detected': True
                 })
-            
-            # Calculate EAR (Eye Aspect Ratio) for stress/fatigue analysis
-            mesh_points = np.array([
-                np.multiply([p.x, p.y], [frame.shape[1], frame.shape[0]]).astype(int)
-                for p in face_landmarks.landmark
-            ])
-            
-            left_eye_points = mesh_points[somnolence_detector.LEFT_EYE]
-            right_eye_points = mesh_points[somnolence_detector.RIGHT_EYE]
-            
-            left_ear = somnolence_detector.calculate_EAR(left_eye_points)
-            right_ear = somnolence_detector.calculate_EAR(right_eye_points)
-            avg_ear = (left_ear + right_ear) / 2.0
-            
-            return jsonify({
-                'success': True,
-                'message': 'Face landmarks detected',
-                'landmarks': landmarks_data,
-                'ear': avg_ear,
-                'face_detected': True,
-                'num_landmarks': len(landmarks_data)
-            })
-        else:
-            return jsonify({
-                'success': True,
-                'message': 'No face detected',
-                'landmarks': [],
-                'ear': 0.0,
-                'face_detected': False,
-                'num_landmarks': 0
-            })
+            else:
+                return jsonify({
+                    'success': True,
+                    'landmarks': [],
+                    'face_detected': False
+                })
+                
+        except Exception as e:
+            print(f"Error processing image: {e}")
+            return jsonify({'error': 'Image processing failed'}), 500
             
     except Exception as e:
-        print(f"Error in face landmarks API: {e}")
+        print(f"Face landmarks API error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/weather', methods=['GET'])
+def api_weather():
+    """API endpoint to get current weather data"""
+    try:
+        # Get location from query parameters or use IP geolocation
+        lat = request.args.get('lat', type=float)
+        lon = request.args.get('lon', type=float)
+        city = request.args.get('city')
+        
+        if not lat and not lon and not city:
+            # Try to get location from IP
+            location = get_user_location()
+            lat = location.get('lat')
+            lon = location.get('lon')
+            city = location.get('city')
+            
+            # If we got a city name from IP geolocation, use it
+            if city and city != 'Unknown':
+                print(f"📍 Using IP-detected location: {city}")
+        
+        # Get weather data
+        weather_data = get_weather_data(lat=lat, lon=lon, city=city)
+        
+        # If we have IP location data, enhance the weather response
+        if not lat and not lon and not city:
+            location = get_user_location()
+            if location.get('city') != 'Unknown':
+                weather_data['location'] = f"{location['city']}, {location['region']}"
+                weather_data['country'] = location.get('country', 'Unknown')
+        
+        return jsonify({
+            'success': True,
+            'weather': weather_data
+        })
+        
+    except Exception as e:
+        print(f"Weather API error: {e}")
         return jsonify({
             'success': False,
-            'message': f'Error processing face landmarks: {str(e)}',
-            'landmarks': []
+            'error': str(e),
+            'weather': {
+                'error': 'Weather data unavailable',
+                'temperature': None,
+                'location': 'Unknown'
+            }
+        })
+
+@app.route('/api/location', methods=['GET'])
+def api_location():
+    """API endpoint to get user's current location"""
+    try:
+        location = get_user_location()
+        return jsonify({
+            'success': True,
+            'location': location
+        })
+    except Exception as e:
+        print(f"Location API error: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'location': {
+                'city': 'Unknown',
+                'region': 'Unknown',
+                'country': 'Unknown'
+            }
         })
 
 if __name__ == '__main__':

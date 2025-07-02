@@ -4,7 +4,7 @@ import sys
 from datetime import datetime
 
 # Add CSV datasets directory to path for model import
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../CSV datasets')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../CSV_datasets')))
 
 try:
     from arduino_dashboard import DashboardHeatstrokePredictor

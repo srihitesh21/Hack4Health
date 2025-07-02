@@ -4,12 +4,12 @@ import sys
 import os
 
 # Add the CSV datasets directory to path
-sys.path.append('../CSV datasets')
+sys.path.append('../CSV_datasets')
 
 try:
     from heatstroke_prediction_integrated import HeatstrokePredictor
 except ImportError:
-    print("❌ Could not import HeatstrokePredictor. Make sure the CSV datasets directory is accessible.")
+    print("❌ Could not import HeatstrokePredictor. Make sure the CSV_datasets directory is accessible.")
     sys.exit(1)
 
 def check_stored_assessment_data():

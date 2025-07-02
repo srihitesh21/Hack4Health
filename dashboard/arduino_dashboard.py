@@ -22,21 +22,32 @@ from sklearn.preprocessing import StandardScaler, MinMaxScaler
 import warnings
 warnings.filterwarnings('ignore')
 
-# Import MediaPipe model
+# MediaPipe disabled for camera compatibility
+MEDIAPIPE_AVAILABLE = False
+mediapipe_model = None
+print("📷 MediaPipe disabled - using traditional analysis for camera compatibility")
+
+# Import stress fatigue detector
 try:
-    from mediapipe_stress_fatigue import mediapipe_model
-    MEDIAPIPE_AVAILABLE = True
-    print("✅ MediaPipe model imported successfully")
+    from stress_fatigue_detector import FacialWellnessAnalyzer
+    STRESS_FATIGUE_AVAILABLE = True
+    stress_fatigue_detector = None
+    print("✅ Stress fatigue detection available")
 except ImportError as e:
-    print(f"⚠️ Full MediaPipe model not available: {e}")
-    try:
-        from simple_mediapipe_stress_fatigue import simple_mediapipe_model as mediapipe_model
-        MEDIAPIPE_AVAILABLE = True
-        print("✅ Simplified MediaPipe model imported successfully")
-    except ImportError as e2:
-        print(f"⚠️ Simplified MediaPipe model not available: {e2}")
-        MEDIAPIPE_AVAILABLE = False
-        mediapipe_model = None
+    STRESS_FATIGUE_AVAILABLE = False
+    print(f"⚠️ Stress fatigue detection not available: {e}")
+
+# Import somnolence detection
+try:
+    import sys
+    sys.path.append('../somnolence-detection')
+    from somnolence_detection import DrowsinessDetector
+    SOMNOLENCE_AVAILABLE = True
+    somnolence_detector = None
+    print("✅ Somnolence detection available")
+except ImportError as e:
+    SOMNOLENCE_AVAILABLE = False
+    print(f"⚠️ Somnolence detection not available: {e}")
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'arduino_dashboard_secret'
@@ -103,6 +114,19 @@ csv_analysis_results = None
 
 # Initialize heatstroke predictor globally
 heatstroke_predictor = None
+
+def initialize_stress_fatigue_detector():
+    """Initialize the stress fatigue detector if available"""
+    global stress_fatigue_detector
+    if STRESS_FATIGUE_AVAILABLE and stress_fatigue_detector is None:
+        try:
+            stress_fatigue_detector = FacialWellnessAnalyzer()
+            print("✅ Stress fatigue detector initialized")
+            return True
+        except Exception as e:
+            print(f"⚠️ Failed to initialize stress fatigue detector: {e}")
+            return False
+    return STRESS_FATIGUE_AVAILABLE
 
 class PretrainedStressFatigueModel:
     """
@@ -1097,25 +1121,7 @@ def submit_demographics():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
-@app.route('/stress_fatigue_analysis', methods=['GET', 'POST'])
-def stress_fatigue_analysis():
-    """Advanced stress and fatigue analysis using pre-trained models"""
-    if request.method == 'POST':
-        data = request.get_json()
-        
-        # Extract data from request
-        facial_data = data.get('facial_data', {})
-        physiological_data = data.get('physiological_data', {})
-        demographic_data = data.get('demographic_data', {})
-        
-        # Perform advanced analysis
-        analysis_results = perform_advanced_stress_analysis(
-            facial_data, physiological_data, demographic_data
-        )
-        
-        return jsonify(analysis_results)
-    
-    return render_template('stress_fatigue_analysis.html')
+
 
 def perform_advanced_stress_analysis(facial_data, physiological_data, demographic_data):
     """
@@ -1123,40 +1129,7 @@ def perform_advanced_stress_analysis(facial_data, physiological_data, demographi
     with MediaPipe facial landmarks and machine learning
     """
     try:
-        # Try to use MediaPipe model first
-        if MEDIAPIPE_AVAILABLE and mediapipe_model and mediapipe_model.is_initialized:
-            print("🧠 Using MediaPipe model for stress/fatigue analysis")
-            ml_predictions = mediapipe_model.predict_stress_fatigue(
-                facial_data, physiological_data, demographic_data
-            )
-            
-            if ml_predictions.get('model_available', False):
-                # Use MediaPipe predictions directly
-                stress_score = ml_predictions['stress_score']
-                fatigue_score = ml_predictions['fatigue_score']
-                confidence = ml_predictions['confidence']
-                model_version = ml_predictions.get('model_version', 'MediaPipe v1.0')
-                
-                # Determine stress and fatigue levels
-                stress_level = "Low" if stress_score < 0.3 else "Moderate" if stress_score < 0.7 else "High"
-                fatigue_level = "Low" if fatigue_score < 0.3 else "Moderate" if fatigue_score < 0.7 else "High"
-                
-                # Generate recommendations
-                recommendations = generate_mediapipe_recommendations(stress_score, fatigue_score, demographic_data)
-                
-                return {
-                    'stress_score': stress_score,
-                    'fatigue_score': fatigue_score,
-                    'confidence': confidence,
-                    'stress_level': stress_level,
-                    'fatigue_level': fatigue_level,
-                    'model_version': model_version,
-                    'analysis_method': 'MediaPipe Facial Landmarks + Deep Learning',
-                    'recommendations': recommendations,
-                    'facial_features': ml_predictions.get('facial_features', []),
-                    'physiological_features': ml_predictions.get('physiological_features', []),
-                    'timestamp': datetime.now().isoformat()
-                }
+
         
         # Fallback to traditional analysis
         print("🔄 Using traditional analysis as fallback")
@@ -1927,120 +1900,9 @@ def generate_advanced_recommendations(stress_score, fatigue_score, demographic_d
     
     return recommendations
 
-def generate_mediapipe_recommendations(stress_score, fatigue_score, demographic_data):
-    """
-    Generate personalized recommendations based on MediaPipe facial analysis
-    """
-    recommendations = []
-    
-    # Stress recommendations based on facial features
-    if stress_score > 0.7:
-        recommendations.extend([
-            "🧘 **Immediate Stress Relief**: Practice deep breathing exercises (4-7-8 technique)",
-            "👁️ **Eye Strain**: Take 20-second breaks every 20 minutes, look at something 20 feet away",
-            "😌 **Facial Tension**: Gentle facial massage to release jaw and brow tension",
-            "🏃 **Physical Activity**: 10-minute walk to reduce cortisol levels",
-            "💧 **Hydration**: Drink water to support stress response"
-        ])
-    elif stress_score > 0.4:
-        recommendations.extend([
-            "🌿 **Mindfulness**: 5-minute meditation session",
-            "🎵 **Relaxation**: Listen to calming music",
-            "📱 **Digital Detox**: Take a 30-minute break from screens",
-            "🍃 **Nature**: Spend time outdoors if possible"
-        ])
-    
-    # Fatigue recommendations based on facial features
-    if fatigue_score > 0.7:
-        recommendations.extend([
-            "😴 **Rest**: Take a 20-minute power nap",
-            "💡 **Light Therapy**: Get exposure to natural light",
-            "🚶 **Movement**: Gentle stretching to improve circulation",
-            "🥤 **Caffeine**: Consider a small amount if not contraindicated",
-            "👁️ **Eye Care**: Rest your eyes with warm compress"
-        ])
-    elif fatigue_score > 0.4:
-        recommendations.extend([
-            "💧 **Hydration**: Ensure adequate water intake",
-            "🍎 **Nutrition**: Eat a balanced snack",
-            "🔄 **Posture**: Adjust your sitting position",
-            "🌬️ **Fresh Air**: Open a window for better ventilation"
-        ])
-    
-    # General wellness recommendations
-    recommendations.extend([
-        "📊 **Monitor**: Continue tracking your stress and fatigue levels",
-        "🏥 **Consult**: Consider professional advice if symptoms persist",
-        "📱 **App Usage**: Use stress management apps for guided sessions"
-    ])
-    
-    return recommendations[:8]  # Limit to top 8 recommendations
 
-@app.route('/mediapipe_analysis')
-def mediapipe_analysis():
-    """MediaPipe-based stress and fatigue analysis page"""
-    return render_template('mediapipe_analysis.html')
 
-@app.route('/api/mediapipe_analysis', methods=['POST'])
-def api_mediapipe_analysis():
-    """API endpoint for MediaPipe stress and fatigue analysis"""
-    try:
-        data = request.get_json()
-        
-        # Extract data
-        facial_data = data.get('facial_data', {})
-        physiological_data = data.get('physiological_data', {})
-        demographic_data = data.get('demographic_data', {})
-        
-        if MEDIAPIPE_AVAILABLE and mediapipe_model:
-            # Use MediaPipe model for analysis
-            result = mediapipe_model.predict_stress_fatigue(
-                facial_data, physiological_data, demographic_data
-            )
-            
-            if result.get('model_available', False):
-                # Determine levels
-                stress_level = "Low" if result['stress_score'] < 0.3 else "Moderate" if result['stress_score'] < 0.7 else "High"
-                fatigue_level = "Low" if result['fatigue_score'] < 0.3 else "Moderate" if result['fatigue_score'] < 0.7 else "High"
-                
-                # Generate recommendations
-                recommendations = generate_mediapipe_recommendations(
-                    result['stress_score'], result['fatigue_score'], demographic_data
-                )
-                
-                return jsonify({
-                    'success': True,
-                    'stress_score': result['stress_score'],
-                    'fatigue_score': result['fatigue_score'],
-                    'confidence': result['confidence'],
-                    'stress_level': stress_level,
-                    'fatigue_level': fatigue_level,
-                    'model_version': result.get('model_version', 'MediaPipe v1.0'),
-                    'analysis_method': 'MediaPipe Facial Landmarks + Deep Learning',
-                    'recommendations': recommendations,
-                    'facial_features': result.get('facial_features', []),
-                    'physiological_features': result.get('physiological_features', []),
-                    'timestamp': datetime.now().isoformat()
-                })
-            else:
-                return jsonify({
-                    'success': False,
-                    'error': 'MediaPipe model not available',
-                    'fallback_available': True
-                })
-        else:
-            return jsonify({
-                'success': False,
-                'error': 'MediaPipe not available',
-                'fallback_available': True
-            })
-            
-    except Exception as e:
-        print(f"Error in MediaPipe analysis API: {e}")
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        })
+
 
 # --- Heatstroke Predictor Integration ---
 import sys
@@ -2322,6 +2184,64 @@ def get_latest_heatstroke_prediction():
         'bpm_data': bpm_data
     })
 
+@app.route('/api/stress_fatigue_analysis', methods=['POST'])
+def api_stress_fatigue_analysis():
+    """API endpoint for stress and fatigue analysis using MediaPipe face mesh"""
+    if not STRESS_FATIGUE_AVAILABLE:
+        return jsonify({
+            'error': 'Stress fatigue detection not available',
+            'stress_level': 0.0,
+            'fatigue_level': 0.0,
+            'confidence': 0.0
+        })
+    
+    try:
+        # Initialize detector if needed
+        if not initialize_stress_fatigue_detector():
+            return jsonify({
+                'error': 'Failed to initialize stress fatigue detector',
+                'stress_level': 0.0,
+                'fatigue_level': 0.0,
+                'confidence': 0.0
+            })
+        
+        # Get analysis summary
+                    summary = stress_fatigue_detector.generate_wellness_summary()
+        
+        return jsonify({
+            'stress_level': summary['stress_level'],
+            'fatigue_level': summary['fatigue_level'],
+            'confidence': summary['confidence'],
+            'trends': summary['trends'],
+            'recommendations': summary['recommendations'],
+            'success': True
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'error': f'Analysis failed: {str(e)}',
+            'stress_level': 0.0,
+            'fatigue_level': 0.0,
+            'confidence': 0.0
+        })
+
+@app.route('/api/reset_stress_fatigue', methods=['POST'])
+def api_reset_stress_fatigue():
+    """Reset stress fatigue analysis data"""
+    try:
+        # Reset global variables
+        global latest_analysis
+        latest_analysis.update({
+            'stress_score': 0.0,
+            'fatigue_score': 0.0,
+            'stress_confidence': 0.0,
+            'fatigue_confidence': 0.0
+        })
+        
+        return jsonify({'success': True, 'message': 'Stress fatigue analysis reset successfully'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
 @app.route('/api/test_sunstroke', methods=['POST'])
 def test_sunstroke():
     """API endpoint to run the sunstroke test command"""
@@ -2357,6 +2277,109 @@ def test_sunstroke():
         return jsonify({
             'success': False,
             'error': str(e)
+        })
+
+@app.route('/api/face_landmarks', methods=['POST'])
+def api_face_landmarks():
+    """Get real-time face landmarks using somnolence detection"""
+    try:
+        if not SOMNOLENCE_AVAILABLE:
+            return jsonify({
+                'success': False, 
+                'message': 'Somnolence detection not available',
+                'landmarks': []
+            })
+        
+        # Initialize detector if needed
+        global somnolence_detector
+        if somnolence_detector is None:
+            somnolence_detector = DrowsinessDetector()
+        
+        # Get image data from request
+        data = request.get_json()
+        if not data or 'image_data' not in data:
+            return jsonify({
+                'success': False,
+                'message': 'No image data provided',
+                'landmarks': []
+            })
+        
+        # Decode base64 image
+        import base64
+        import cv2
+        import numpy as np
+        
+        # Remove data URL prefix if present
+        image_data = data['image_data']
+        if image_data.startswith('data:image'):
+            image_data = image_data.split(',')[1]
+        
+        # Decode base64 to image
+        image_bytes = base64.b64decode(image_data)
+        nparr = np.frombuffer(image_bytes, np.uint8)
+        frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        
+        if frame is None:
+            return jsonify({
+                'success': False,
+                'message': 'Invalid image data',
+                'landmarks': []
+            })
+        
+        # Process frame with somnolence detector
+        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        results = somnolence_detector.face_mesh.process(rgb_frame)
+        
+        landmarks_data = []
+        if results.multi_face_landmarks:
+            # Get landmarks from the first detected face
+            face_landmarks = results.multi_face_landmarks[0]
+            
+            # Convert landmarks to list of [x, y, z] coordinates
+            for landmark in face_landmarks.landmark:
+                landmarks_data.append({
+                    'x': landmark.x,
+                    'y': landmark.y,
+                    'z': landmark.z
+                })
+            
+            # Calculate EAR (Eye Aspect Ratio) for stress/fatigue analysis
+            mesh_points = np.array([
+                np.multiply([p.x, p.y], [frame.shape[1], frame.shape[0]]).astype(int)
+                for p in face_landmarks.landmark
+            ])
+            
+            left_eye_points = mesh_points[somnolence_detector.LEFT_EYE]
+            right_eye_points = mesh_points[somnolence_detector.RIGHT_EYE]
+            
+            left_ear = somnolence_detector.calculate_EAR(left_eye_points)
+            right_ear = somnolence_detector.calculate_EAR(right_eye_points)
+            avg_ear = (left_ear + right_ear) / 2.0
+            
+            return jsonify({
+                'success': True,
+                'message': 'Face landmarks detected',
+                'landmarks': landmarks_data,
+                'ear': avg_ear,
+                'face_detected': True,
+                'num_landmarks': len(landmarks_data)
+            })
+        else:
+            return jsonify({
+                'success': True,
+                'message': 'No face detected',
+                'landmarks': [],
+                'ear': 0.0,
+                'face_detected': False,
+                'num_landmarks': 0
+            })
+            
+    except Exception as e:
+        print(f"Error in face landmarks API: {e}")
+        return jsonify({
+            'success': False,
+            'message': f'Error processing face landmarks: {str(e)}',
+            'landmarks': []
         })
 
 if __name__ == '__main__':

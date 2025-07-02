@@ -6,8 +6,14 @@
     <title>Health Risk Assessment - Arduino Dashboard</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
     <style>
+            @keyframes pulse {
+                0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+                50% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.7; }
+                100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+            }
+            
         .demographics-container {
-            max-width: 600px;
+            max-width: 1200px;
             margin: 50px auto;
             padding: 30px;
             background: white;
@@ -26,6 +32,17 @@
             display: flex;
             flex-direction: column;
             gap: 20px;
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .form-row .form-group {
+            flex: 1;
+            min-width: 250px;
         }
         
         .form-group {
@@ -132,6 +149,487 @@
             border: 1px solid #e9ecef;
         }
         
+        .form-section {
+            margin-bottom: 30px;
+            padding: 25px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .form-section h4 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 20px;
+            border-bottom: 2px solid #f8f9fa;
+            padding-bottom: 10px;
+        }
+        
+        .form-check {
+            margin-bottom: 12px;
+            padding: 8px;
+            border-radius: 6px;
+            transition: background-color 0.2s;
+        }
+        
+        .form-check:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .form-check-input {
+            margin-right: 10px;
+        }
+        
+        .form-check-label {
+            font-weight: 500;
+            color: #333;
+            cursor: pointer;
+        }
+        
+        /* Stress Analysis Styles */
+        .stress-subsection {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #ffc107;
+        }
+        
+        .stress-subsection h5 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .stress-subsection h6 {
+            color: #555;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        
+        .symptoms-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .symptom-group {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+        
+        .checkbox-item:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .checkbox-item input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+        }
+        
+        .checkbox-item span {
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .stress-slider {
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: #e9ecef;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        .stress-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #007bff;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .stress-slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #007bff;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .slider-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .slider-labels span:nth-child(2) {
+            font-weight: bold;
+            color: #007bff;
+            font-size: 14px;
+        }
+        
+        /* Advanced Analysis Styles */
+        .camera-controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+        
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        
+        .video-container {
+            position: relative;
+            width: 100%;
+            max-width: 640px;
+            margin: 0 auto 20px;
+        }
+        
+        #video {
+            width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+        
+        .analysis-overlay {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 12px;
+        }
+        
+        .feature-indicators {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .feature-indicator {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .feature-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .analysis-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .analysis-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .score-display {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .score-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            position: relative;
+        }
+        
+        .score-circle::before {
+            content: '';
+            position: absolute;
+            top: -5px;
+            left: -5px;
+            right: -5px;
+            bottom: -5px;
+            border-radius: 50%;
+            background: conic-gradient(from 0deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #feca57);
+            z-index: -1;
+        }
+        
+        .stress-score { background: linear-gradient(135deg, #ff6b6b, #ee5a24); }
+        .fatigue-score { background: linear-gradient(135deg, #4ecdc4, #44a08d); }
+        
+        .confidence-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 15px;
+        }
+        
+        .confidence-bar {
+            width: 200px;
+            height: 8px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-left: 10px;
+        }
+        
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff6b6b, #4ecdc4);
+            transition: width 0.5s ease;
+        }
+        
+        .model-breakdown {
+            margin-top: 10px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .model-details {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        
+        .model-info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        
+        .model-info-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.1);
+        }
+        
+        .model-info-card h4 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        .model-stats {
+            text-align: center;
+        }
+        
+        .model-stats div {
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        .risk-factors {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        
+        .risk-factor {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 10px;
+            border-left: 4px solid;
+        }
+        
+        .risk-high { background: #ffe6e6; border-left-color: #ff6b6b; }
+        .risk-moderate { background: #fff3cd; border-left-color: #ffc107; }
+        .risk-low { background: #e8f5e8; border-left-color: #28a745; }
+        
+        .recommendations {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+        
+        .recommendation-category {
+            margin-bottom: 25px;
+            padding: 20px;
+            border-radius: 10px;
+            background: #f8f9fa;
+        }
+        
+        .priority-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .priority-critical { background: #ff6b6b; color: white; }
+        .priority-high { background: #ffc107; color: black; }
+        .priority-medium { background: #17a2b8; color: white; }
+        .priority-low { background: #28a745; color: white; }
+        
+        .recommendation-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .recommendation-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+            position: relative;
+            padding-left: 25px;
+        }
+        
+        .recommendation-list li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #28a745;
+            font-weight: bold;
+        }
+        
+        /* Timer Styles */
+        .timer-display {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 15px 0;
+            color: #333;
+        }
+        
+        .timer-label {
+            color: #666;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        
+        .timer-value {
+            color: #28a745;
+            font-family: 'Courier New', monospace;
+            background: #e8f5e8;
+            padding: 5px 10px;
+            border-radius: 5px;
+            border: 2px solid #28a745;
+        }
+        
+        .timer-progress {
+            margin: 15px 0;
+        }
+        
+        .timer-progress .progress {
+            height: 20px;
+            border-radius: 10px;
+            background: #e9ecef;
+            overflow: hidden;
+        }
+        
+        .timer-progress .progress-bar {
+            transition: width 0.5s ease;
+            border-radius: 10px;
+        }
+        
+        .timer-status {
+            font-size: 14px;
+            color: #666;
+            margin: 10px 0;
+            font-style: italic;
+        }
+        
+        .timer-ready {
+            color: #28a745;
+            font-weight: bold;
+        }
+        
+        .timer-waiting {
+            color: #ffc107;
+        }
+        
+        .timer-stabilizing {
+            color: #17a2b8;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        @media (max-width: 768px) {
+            .analysis-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .camera-controls {
+                flex-direction: column;
+            }
+            
+            .feature-indicators {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
         .health-questionnaire h2 {
             color: #333;
             margin-bottom: 15px;
@@ -169,6 +667,17 @@
         .radio-group {
             display: flex;
             gap: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .radio-group label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            color: #333;
+            min-width: 120px;
         }
         
         .radio-group label {
@@ -391,6 +900,7 @@
         <p>Please provide your basic information and complete the health questionnaire to assess your cardiovascular risk factors.</p>
         
         <form class="demographics-form" id="demographicsForm">
+            <div class="form-row">
             <div class="form-group">
                 <label for="age">Age:</label>
                 <input type="number" id="age" name="age" min="1" max="120" required>
@@ -404,6 +914,7 @@
                     <option value="female">Female</option>
                     <option value="other">Other</option>
                 </select>
+                </div>
             </div>
         </form>
         
@@ -566,16 +1077,116 @@
                     </div>
                 </div>
 
-                <!-- Computer Vision & Facial Expression Analysis Section -->
+
+
+                <!-- Stress & Fatigue Analysis Section -->
                 <div class="form-section">
-                    <h4><i class="fas fa-camera text-primary"></i> Facial Expression Analysis</h4>
-                    <p class="text-muted">Allow camera access to analyze facial expressions for stress, fatigue, and emotional state assessment.</p>
+                    <h4><i class="fas fa-brain text-primary"></i> Stress & Fatigue Analysis</h4>
+                    <p class="text-muted">Multi-modal AI-powered stress and fatigue assessment using facial features, physiological data, and lifestyle factors</p>
                     
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="camera-container">
-                                <video id="video" width="100%" height="300" autoplay muted></video>
-                                <canvas id="canvas" style="display: none;"></canvas>
+                    <!-- Camera Controls -->
+                    <div class="camera-controls">
+                        <button type="button" class="btn btn-primary" id="startCamera">📹 Start Camera</button>
+                        <button type="button" class="btn btn-success" id="startAnalysis">🧠 Start Analysis</button>
+                        <button type="button" class="btn btn-danger" id="stopCamera">⏹️ Stop Camera</button>
+                        <button type="button" class="btn btn-warning" id="resetAnalysis">🔄 Reset Analysis</button>
+                        <button type="button" class="btn btn-info" id="testCamera" onclick="testCamera()">🔍 Test Camera</button>
+                        <button type="button" class="btn btn-secondary" id="simpleTest" onclick="simpleCameraTest()">🧪 Simple Test</button>
+                        <button type="button" class="btn btn-danger" id="retryMediaPipe" onclick="retryMediaPipe()">🔄 Retry MediaPipe</button>
+                    </div>
+                    
+                    <!-- Analysis Timer -->
+                    <div class="analysis-timer" id="analysisTimer" style="display: none; text-align: center; margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 10px; border: 2px solid #dee2e6;">
+                        <h4>⏱️ Analysis Timer</h4>
+                        <div class="timer-display">
+                            <span class="timer-label">Time Elapsed:</span>
+                            <span class="timer-value" id="timerValue">00:00</span>
+                        </div>
+                        <div class="timer-progress">
+                            <div class="progress">
+                                <div class="progress-bar" id="timerProgress" role="progressbar" style="width: 0%; background: linear-gradient(90deg, #ff6b6b, #4ecdc4);"></div>
+                            </div>
+                        </div>
+                        <div class="timer-status" id="timerStatus">Position your face and wait for stable readings...</div>
+                        <button type="button" class="btn btn-success" id="clockInBtn" style="display: none; margin-top: 10px;">✅ Clock In - Record Reading</button>
+                    </div>
+                    
+                    <!-- Video Container -->
+                    <div class="video-container" style="position: relative; width: 100%; max-width: 640px; margin: 20px auto;">
+                        <video id="video" autoplay muted style="width: 100%; height: auto; border: 2px solid #ddd; border-radius: 8px;"></video>
+                        <canvas id="canvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10;"></canvas>
+                        <div class="analysis-overlay" id="analysisOverlay" style="position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); color: white; padding: 5px 10px; border-radius: 4px; font-size: 12px; z-index: 20;">
+                            Analysis: <span id="analysisStatus">Ready</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Real-time Feature Indicators -->
+                    <div class="feature-indicators" id="featureIndicators">
+                        <div class="feature-indicator">
+                            <div>Eye Openness</div>
+                            <div class="feature-value" id="eyeOpenness">0.5</div>
+                        </div>
+                        <div class="feature-indicator">
+                            <div>Analysis Method</div>
+                            <div class="feature-value" id="analysisMethod">ML-Enhanced</div>
+                        </div>
+                        <div class="feature-indicator">
+                            <div>Face Detection</div>
+                            <div class="feature-value" id="faceDetectionMode">Fallback</div>
+                        </div>
+                        <div class="feature-indicator">
+                            <div>Model Version</div>
+                            <div class="feature-value" id="modelVersion">v3.0</div>
+                        </div>
+                        <div class="feature-indicator">
+                            <div>Confidence</div>
+                            <div class="feature-value" id="confidence">0.8</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Analysis Results Grid -->
+                    <div class="analysis-grid">
+                        <div class="analysis-card">
+                            <h3>😰 Stress Analysis</h3>
+                            <div class="score-display">
+                                <div class="score-circle stress-score" id="stressScoreCircle">
+                                    <span id="stressScore">0.0</span>
+                                </div>
+                                <div>Stress Level: <strong id="stressLevelText">Minimal</strong></div>
+                                <div class="confidence-indicator">
+                                    Confidence: <span id="stressConfidence">0.0</span>
+                                    <div class="confidence-bar">
+                                        <div class="confidence-fill" id="stressConfidenceBar"></div>
+                                    </div>
+                                </div>
+                                <div class="model-breakdown">
+                                    <small>ML: <span id="mlStressScore">0.0</span> | Rule: <span id="ruleStressScore">0.0</span></small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="analysis-card">
+                            <h3>😴 Fatigue Analysis</h3>
+                            <div class="score-display">
+                                <div class="score-circle fatigue-score" id="fatigueScoreCircle">
+                                    <span id="fatigueScore">0.0</span>
+                                </div>
+                                <div>Fatigue Level: <strong id="fatigueLevelText">None</strong></div>
+                                <div class="confidence-indicator">
+                                    Confidence: <span id="fatigueConfidence">0.0</span>
+                                    <div class="confidence-bar">
+                                        <div class="confidence-fill" id="fatigueConfidenceBar"></div>
+                                    </div>
+                                </div>
+                                <div class="model-breakdown">
+                                    <small>ML: <span id="mlFatigueScore">0.0</span> | Rule: <span id="ruleFatigueScore">0.0</span></small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+
+
                                 <div class="camera-controls">
                                     <button type="button" class="btn btn-primary" id="startCamera">
                                         <i class="fas fa-camera"></i> Start Camera
@@ -649,7 +1260,7 @@
         
         <div class="nav-links">
             <a href="/" onclick="updateHomepageHeatstroke()">Back to Dashboard</a>
-            <a href="/stress_fatigue_analysis">🧠 Advanced Stress Analysis</a>
+            
             <a href="#" onclick="loadStoredData()">View Stored Data</a>
         </div>
         
@@ -660,59 +1271,1280 @@
     </div>
 
     <script>
+        // Global variables
+        let video = document.getElementById('video');
+        let canvas = document.getElementById('canvas');
+        let ctx = canvas.getContext('2d');
+        let analysisStream = null;
+        
+        // MediaPipe variables
+        let faceMesh = null;
+        let isMediaPipeLoaded = false;
+        let facialAnalysisData = null;
+        let isProcessing = false;
+        
+        // Timer variables
+        let analysisStartTime = null;
+        let timerInterval = null;
+        let isTimerRunning = false;
+        const OPTIMAL_READING_TIME = 30000; // 30 seconds in milliseconds
+        const STABILIZATION_TIME = 15000; // 15 seconds for initial stabilization
+        const CLOCK_IN_READY_TIME = 15000; // 15 seconds - when clock in becomes available
+
+        // Camera Controls
+        document.getElementById('startCamera').addEventListener('click', startCamera);
+        document.getElementById('stopCamera').addEventListener('click', stopCamera);
+        document.getElementById('startAnalysis').addEventListener('click', startAnalysis);
+        document.getElementById('resetAnalysis').addEventListener('click', resetAnalysis);
+        document.getElementById('testCamera').addEventListener('click', testCamera);
+        document.getElementById('simpleTest').addEventListener('click', simpleCameraTest);
+        document.getElementById('retryMediaPipe').addEventListener('click', retryMediaPipe);
+        document.getElementById('clockInBtn').addEventListener('click', clockInReading);
+
+        // Load MediaPipe with multiple fallback options
+        async function loadMediaPipe() {
+            try {
+                console.log('🔄 Loading MediaPipe...');
+                
+                // Check if MediaPipe is already loaded
+                if (window.FaceMesh) {
+                    console.log('✅ MediaPipe already loaded');
+                    return true;
+                }
+                
+                // Try multiple CDN sources
+                const cdnSources = [
+                    'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/face_mesh.js',
+                    'https://unpkg.com/@mediapipe/face_mesh@0.4.1633559619/face_mesh.js',
+                    'https://cdn.skypack.dev/@mediapipe/face_mesh@0.4.1633559619/face_mesh.js'
+                ];
+                
+                for (const cdnUrl of cdnSources) {
+                    try {
+                        console.log(`🔄 Trying CDN: ${cdnUrl}`);
+                        
+                        const script = document.createElement('script');
+                        script.src = cdnUrl;
+                        script.crossOrigin = 'anonymous';
+                        
+                        await new Promise((resolve, reject) => {
+                            script.onload = () => {
+                                console.log(`✅ MediaPipe loaded from: ${cdnUrl}`);
+                                resolve();
+                            };
+                            script.onerror = () => {
+                                console.log(`❌ Failed to load from: ${cdnUrl}`);
+                                reject(new Error(`Failed to load from ${cdnUrl}`));
+                            };
+                            setTimeout(() => reject(new Error('Timeout')), 8000);
+                            document.head.appendChild(script);
+                        });
+                        
+                        // Wait a bit for initialization
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        
+                        if (window.FaceMesh) {
+                            console.log('✅ MediaPipe successfully loaded and available');
+                            return true;
+                        }
+                        
+                    } catch (cdnError) {
+                        console.log(`❌ CDN failed: ${cdnUrl}`, cdnError);
+                        continue;
+                    }
+                }
+                
+                console.error('❌ All MediaPipe CDN sources failed');
+                return false;
+                
+            } catch (error) {
+                console.error('❌ Failed to load MediaPipe:', error);
+                return false;
+            }
+        }
+        
+        // Initialize MediaPipe FaceMesh with better error handling
+        async function initializeFaceMesh() {
+            try {
+                if (!window.FaceMesh) {
+                    console.log('❌ MediaPipe not available');
+                    return false;
+                }
+                
+                // Try different initialization approaches
+                const cdnSources = [
+                    'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/',
+                    'https://unpkg.com/@mediapipe/face_mesh@0.4.1633559619/',
+                    'https://cdn.skypack.dev/@mediapipe/face_mesh@0.4.1633559619/'
+                ];
+                
+                for (const cdnBase of cdnSources) {
+                    try {
+                        console.log(`🔄 Trying to initialize FaceMesh with: ${cdnBase}`);
+                        
+                        faceMesh = new FaceMesh({
+                            locateFile: (file) => {
+                                return `${cdnBase}${file}`;
+                            }
+                        });
+                        
+                        // Wait for initialization
+                        await new Promise((resolve, reject) => {
+                            const timeout = setTimeout(() => {
+                                reject(new Error('FaceMesh initialization timeout'));
+                            }, 10000);
+                            
+                            faceMesh.initialize().then(() => {
+                                clearTimeout(timeout);
+                                resolve();
+                            }).catch(reject);
+                        });
+                        
+                        faceMesh.setOptions({
+                            maxNumFaces: 1,
+                            refineLandmarks: true,
+                            minDetectionConfidence: 0.5,
+                            minTrackingConfidence: 0.5
+                        });
+                        
+                        faceMesh.onResults(onFaceMeshResults);
+                        
+                        console.log('✅ FaceMesh initialized successfully');
+                        return true;
+                        
+                    } catch (initError) {
+                        console.log(`❌ FaceMesh initialization failed with ${cdnBase}:`, initError);
+                        faceMesh = null;
+                        continue;
+                    }
+                }
+                
+                console.error('❌ All FaceMesh initialization attempts failed');
+                return false;
+                
+                } catch (error) {
+                console.error('❌ Failed to initialize FaceMesh:', error);
+                return false;
+            }
+        }
+        
+        // Handle MediaPipe results
+        function onFaceMeshResults(results) {
+            if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
+                const landmarks = results.multiFaceLandmarks[0];
+                drawLandmarksFromMediaPipe(landmarks);
+                updateAnalysisFromMediaPipe(landmarks);
+            }
+        }
+        
+        // Draw landmarks from MediaPipe
+        function drawLandmarksFromMediaPipe(landmarks) {
+            if (!landmarks || landmarks.length === 0) return;
+            
+            // Clear canvas and draw video frame
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // Convert landmarks to pixel coordinates
+            const meshPoints = landmarks.map(landmark => ({
+                x: landmark.x * canvas.width,
+                y: landmark.y * canvas.height
+            }));
+            
+            // Draw face mesh connections
+            drawFaceMeshConnections(meshPoints);
+            
+            // Draw key landmark points
+            drawKeyLandmarks(meshPoints);
+        }
+        
+        // Draw face mesh connections
+        function drawFaceMeshConnections(meshPoints) {
+            // Face outline
+            ctx.strokeStyle = '#FF0000';
+            ctx.lineWidth = 8;
+            drawFaceOutline(meshPoints);
+            
+            // Eyes
+            ctx.strokeStyle = '#0000FF';
+            ctx.lineWidth = 6;
+            drawEyes(meshPoints);
+            
+            // Eyebrows
+            ctx.strokeStyle = '#00FF00';
+            ctx.lineWidth = 6;
+            drawEyebrows(meshPoints);
+            
+            // Nose and mouth
+            ctx.strokeStyle = '#FFFF00';
+            ctx.lineWidth = 6;
+            drawNoseAndMouth(meshPoints);
+        }
+        
+        // Draw face outline
+        function drawFaceOutline(meshPoints) {
+            const outline = [10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288, 397, 365, 379, 378, 400, 377, 152, 148, 176, 149, 150, 136, 172, 58, 132, 93, 234, 127, 162, 21, 54, 103, 67, 109, 10];
+            drawPath(meshPoints, outline);
+        }
+        
+        // Draw eyes
+        function drawEyes(meshPoints) {
+            const leftEye = [362, 385, 387, 263, 373, 380, 381, 382, 362];
+            const rightEye = [33, 160, 158, 133, 153, 144, 145, 146, 33];
+            drawPath(meshPoints, leftEye);
+            drawPath(meshPoints, rightEye);
+        }
+        
+        // Draw eyebrows
+        function drawEyebrows(meshPoints) {
+            const leftEyebrow = [276, 283, 282, 295, 285, 300, 293, 334, 296, 336, 285];
+            const rightEyebrow = [46, 53, 52, 65, 55, 70, 63, 105, 66, 107, 55];
+            drawPath(meshPoints, leftEyebrow);
+            drawPath(meshPoints, rightEyebrow);
+        }
+        
+        // Draw nose and mouth
+        function drawNoseAndMouth(meshPoints) {
+            const nose = [1, 2, 98, 327, 326, 6, 197, 195, 5, 4, 1];
+            const mouth = [61, 84, 17, 314, 405, 320, 307, 375, 321, 308, 324, 318, 61];
+            drawPath(meshPoints, nose);
+            drawPath(meshPoints, mouth);
+        }
+        
+        // Draw a path from landmark indices
+        function drawPath(meshPoints, indices) {
+            ctx.beginPath();
+            for (let i = 0; i < indices.length; i++) {
+                const point = meshPoints[indices[i]];
+                if (point) {
+                    if (i === 0) {
+                        ctx.moveTo(point.x, point.y);
+                } else {
+                        ctx.lineTo(point.x, point.y);
+                    }
+                }
+            }
+            ctx.stroke();
+        }
+        
+        // Draw key landmark points
+        function drawKeyLandmarks(meshPoints) {
+            const keyPoints = [
+                // Eyes
+                { indices: [362, 385, 387, 263, 373, 380, 381, 382, 33, 160, 158, 133, 153, 144, 145, 146], color: '#FF0000' },
+                // Eyebrows
+                { indices: [276, 283, 282, 295, 285, 46, 53, 52, 65, 55], color: '#00FF00' },
+                // Nose
+                { indices: [1, 2, 98, 327, 326, 6, 197, 195, 5, 4], color: '#0000FF' },
+                // Mouth
+                { indices: [61, 84, 17, 314, 405, 320, 307, 375, 321, 308, 324, 318], color: '#FFFF00' }
+            ];
+            
+            keyPoints.forEach(group => {
+                ctx.fillStyle = group.color;
+                group.indices.forEach(index => {
+                    const point = meshPoints[index];
+                    if (point) {
+                        ctx.beginPath();
+                        ctx.arc(point.x, point.y, 6, 0, 2 * Math.PI);
+                        ctx.fill();
+                        
+                        // White border
+                        ctx.strokeStyle = '#FFFFFF';
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                    }
+                });
+            });
+        }
+        
+        // Update analysis from MediaPipe landmarks
+        function updateAnalysisFromMediaPipe(landmarks) {
+            // Calculate EAR (Eye Aspect Ratio)
+            const leftEye = [362, 385, 387, 263, 373, 380];
+            const rightEye = [33, 160, 158, 133, 153, 144];
+            
+            const leftEAR = calculateEAR(landmarks, leftEye);
+            const rightEAR = calculateEAR(landmarks, rightEye);
+            const avgEAR = (leftEAR + rightEAR) / 2;
+            
+            // Update analysis with smoothing
+            updateAnalysisFromLandmarks({
+                ear: avgEAR,
+                landmarks: landmarks,
+                face_detected: true,
+                num_landmarks: landmarks.length
+            });
+        }
+        
+        // Calculate EAR (Eye Aspect Ratio)
+        function calculateEAR(landmarks, eyeIndices) {
+            const points = eyeIndices.map(i => ({
+                x: landmarks[i].x * canvas.width,
+                y: landmarks[i].y * canvas.height
+            }));
+            
+            const A = distance(points[1], points[5]);
+            const B = distance(points[2], points[4]);
+            const C = distance(points[0], points[3]);
+            
+            return (A + B) / (2.0 * C);
+        }
+        
+        // Calculate distance between two points
+        function distance(p1, p2) {
+            return Math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2);
+        }
+        
+        // Start MediaPipe processing with fallback
+        function startMediaPipeProcessing() {
+            console.log('🚀 Starting MediaPipe processing...');
+            isProcessing = true;
+            
+            function processMediaPipe() {
+                if (!isProcessing) return;
+                
+                try {
+                    if (video.readyState === video.HAVE_ENOUGH_DATA && faceMesh) {
+                        faceMesh.send({ image: video });
+                    } else if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                        // Fallback: simple face detection overlay
+                        drawSimpleFaceOverlay();
+                    }
+                } catch (error) {
+                    console.log('⚠️ MediaPipe processing error, using fallback:', error);
+                    drawSimpleFaceOverlay();
+                }
+                
+                requestAnimationFrame(processMediaPipe);
+            }
+            
+            processMediaPipe();
+        }
+        
+        // Retry MediaPipe function
+        async function retryMediaPipe() {
+            try {
+                console.log('🔄 Retrying MediaPipe...');
+                document.getElementById('analysisStatus').textContent = 'Retrying MediaPipe...';
+                
+                // Reset MediaPipe state
+                faceMesh = null;
+                isMediaPipeLoaded = false;
+                
+                // Try to load MediaPipe again
+                const mediaPipeLoaded = await loadMediaPipe();
+                if (mediaPipeLoaded) {
+                    const faceMeshInitialized = await initializeFaceMesh();
+                    if (faceMeshInitialized) {
+                        console.log('✅ MediaPipe retry successful!');
+                        document.getElementById('analysisStatus').textContent = 'MediaPipe active';
+                        document.getElementById('faceDetectionMode').textContent = 'MediaPipe';
+                        showSuccessMessage('MediaPipe loaded successfully!');
+                        return;
+                    }
+                }
+                
+                console.log('❌ MediaPipe retry failed, using fallback');
+                document.getElementById('analysisStatus').textContent = 'Using fallback overlay';
+                showErrorMessage('MediaPipe failed to load, using animated overlay');
+                
+                } catch (error) {
+                console.error('❌ MediaPipe retry error:', error);
+                document.getElementById('analysisStatus').textContent = 'Fallback mode';
+                showErrorMessage('MediaPipe retry failed: ' + error.message);
+            }
+        }
+        
+        // Simple face overlay fallback
+        function drawSimpleFaceOverlay() {
+            if (!video.videoWidth) return;
+            
+            // Clear canvas and draw video frame
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // Draw a simple animated face outline
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = Math.min(canvas.width, canvas.height) / 4;
+            
+            // Animated color
+            const hue = (Date.now() / 20) % 360;
+            ctx.strokeStyle = `hsl(${hue}, 70%, 50%)`;
+            ctx.lineWidth = 8;
+            ctx.setLineDash([20, 10]);
+            ctx.lineDashOffset = -Date.now() / 50;
+            
+            // Face outline
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+            ctx.stroke();
+            
+            // Eyes
+            ctx.beginPath();
+            ctx.arc(centerX - radius/3, centerY - radius/4, radius/8, 0, 2 * Math.PI);
+            ctx.arc(centerX + radius/3, centerY - radius/4, radius/8, 0, 2 * Math.PI);
+            ctx.stroke();
+            
+            // Mouth
+            ctx.beginPath();
+            ctx.arc(centerX, centerY + radius/3, radius/6, 0, Math.PI);
+            ctx.stroke();
+            
+            // Reset line dash
+            ctx.setLineDash([]);
+            
+            // Provide fallback analysis when MediaPipe is not available
+            if (isProcessing && !facialAnalysisData) {
+                // Simulate basic analysis based on time
+                const elapsed = analysisStartTime ? Date.now() - analysisStartTime : 0;
+                const timeBasedStress = Math.min(100, 25 + (elapsed / 1000) * 2);
+                const timeBasedFatigue = Math.min(100, 20 + (elapsed / 1000) * 1.5);
+                
+                // Update UI with fallback values
+                document.getElementById('stressScore').textContent = timeBasedStress.toFixed(1);
+                document.getElementById('fatigueScore').textContent = timeBasedFatigue.toFixed(1);
+                document.getElementById('stressLevelText').textContent = getStressLevel(timeBasedStress);
+                document.getElementById('fatigueLevelText').textContent = getFatigueLevel(timeBasedFatigue);
+                
+                // Store fallback data
+                facialAnalysisData = {
+                    stressLevel: timeBasedStress,
+                    fatigueLevel: timeBasedFatigue,
+                    ear: 0.25, // Default EAR
+                    landmarks: [],
+                    timestamp: new Date().toISOString(),
+                    fallback: true
+                };
+            }
+        }
+        
+        // Simple camera start function
+        async function startCamera() {
+            try {
+                console.log('🎯 Starting camera...');
+                document.getElementById('analysisStatus').textContent = 'Starting camera...';
+                
+                // Load MediaPipe first
+                const mediaPipeLoaded = await loadMediaPipe();
+                
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { width: 640, height: 480 } 
+                });
+                
+                video.srcObject = stream;
+                analysisStream = stream;
+                
+                video.onloadedmetadata = async () => {
+                    console.log('🎯 Camera ready');
+                    document.getElementById('analysisStatus').textContent = 'Camera ready';
+                    document.getElementById('startAnalysis').disabled = false;
+                    showSuccessMessage('Camera started successfully!');
+                    
+                    // Set canvas size to match video
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    
+                    // Initialize MediaPipe if available
+                    if (mediaPipeLoaded) {
+                        const faceMeshInitialized = await initializeFaceMesh();
+                        if (faceMeshInitialized) {
+                            console.log('🎯 Using MediaPipe for real-time landmarks');
+                            document.getElementById('faceDetectionMode').textContent = 'MediaPipe';
+                            startMediaPipeProcessing();
+            } else {
+                            console.log('🎯 MediaPipe failed, using animated fallback overlay');
+                            document.getElementById('faceDetectionMode').textContent = 'Fallback';
+                            startMediaPipeProcessing(); // This will use the fallback
+                        }
+                    } else {
+                        console.log('🎯 MediaPipe not loaded, using animated fallback overlay');
+                        document.getElementById('faceDetectionMode').textContent = 'Fallback';
+                        startMediaPipeProcessing(); // This will use the fallback
+                    }
+                };
+                
+            } catch (error) {
+                console.error('🎯 Camera error:', error);
+                document.getElementById('analysisStatus').textContent = 'Camera error';
+                showErrorMessage('Camera access failed: ' + error.message);
+            }
+        }
+
+        // Stop camera
+        function stopCamera() {
+            if (analysisStream) {
+                analysisStream.getTracks().forEach(track => track.stop());
+                analysisStream = null;
+            }
+            video.srcObject = null;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Stop processing
+            isProcessing = false;
+            
+            // Stop timer
+            stopAnalysisTimer();
+            
+            document.getElementById('analysisStatus').textContent = 'Camera stopped';
+            document.getElementById('startAnalysis').disabled = true;
+            showSuccessMessage('Camera stopped successfully.');
+        }
+
+        // Start analysis with server-side face detection
+        function startAnalysis() {
+            if (!analysisStream) {
+                showErrorMessage('Please start camera first');
+                return;
+            }
+            
+            document.getElementById('analysisStatus').textContent = 'Analysis running...';
+            showSuccessMessage('Analysis started!');
+            
+            // Start continuous processing
+            isProcessing = true;
+            processFrame();
+            
+            // Start the analysis timer
+            startAnalysisTimer();
+        }
+        
+        // Start analysis timer
+        function startAnalysisTimer() {
+            if (isTimerRunning) return;
+            
+            analysisStartTime = Date.now();
+            isTimerRunning = true;
+            
+            // Show timer
+            document.getElementById('analysisTimer').style.display = 'block';
+            
+            // Start timer interval
+            timerInterval = setInterval(updateTimer, 1000);
+            
+
+        }
+        
+        // Update timer display
+        function updateTimer() {
+            if (!isTimerRunning || !analysisStartTime) return;
+            
+            const elapsed = Date.now() - analysisStartTime;
+            const seconds = Math.floor(elapsed / 1000);
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            
+            // Update timer display
+            const timeString = `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+            document.getElementById('timerValue').textContent = timeString;
+            
+            // Update progress bar
+            const progressPercent = Math.min((elapsed / OPTIMAL_READING_TIME) * 100, 100);
+            document.getElementById('timerProgress').style.width = progressPercent + '%';
+            
+            // Update status based on time
+            const statusElement = document.getElementById('timerStatus');
+            const clockInBtn = document.getElementById('clockInBtn');
+            
+            if (elapsed < CLOCK_IN_READY_TIME) {
+                // Initial stabilization period
+                const remainingSeconds = Math.ceil((CLOCK_IN_READY_TIME - elapsed) / 1000);
+                statusElement.textContent = `Stabilizing readings... Clock in available in ${remainingSeconds} seconds.`;
+                statusElement.className = 'timer-status timer-stabilizing';
+                clockInBtn.style.display = 'none';
+            } else if (elapsed < OPTIMAL_READING_TIME) {
+                // Clock in is now available
+                statusElement.textContent = '✅ Clock in available! Your readings are stable and ready.';
+                statusElement.className = 'timer-status timer-ready';
+                clockInBtn.style.display = 'inline-block';
+                clockInBtn.style.background = '#28a745';
+                clockInBtn.style.color = 'white';
+                clockInBtn.style.animation = 'pulse 1.5s infinite';
+            } else {
+                // Optimal time reached
+                statusElement.textContent = '🎯 Optimal reading time reached! Clock in for most accurate results.';
+                statusElement.className = 'timer-status timer-ready';
+                clockInBtn.style.display = 'inline-block';
+                
+                // Highlight the clock in button more prominently
+                clockInBtn.style.background = '#ff6b6b';
+                clockInBtn.style.color = 'white';
+                clockInBtn.style.animation = 'pulse 1s infinite';
+                clockInBtn.style.fontWeight = 'bold';
+            }
+        }
+        
+        // Clock in function - record the current reading
+        function clockInReading() {
+            if (!facialAnalysisData) {
+                showErrorMessage('No analysis data available. Please wait for readings to stabilize.');
+                return;
+            }
+            
+            const elapsed = Date.now() - analysisStartTime;
+            const seconds = Math.floor(elapsed / 1000);
+            
+            // Add timestamp to the analysis data
+            facialAnalysisData.clockInTime = seconds;
+            facialAnalysisData.clockInTimestamp = new Date().toISOString();
+            
+            // Save the clocked-in stress and fatigue values
+            const clockedStress = facialAnalysisData.stressLevel;
+            const clockedFatigue = facialAnalysisData.fatigueLevel;
+            
+            // Get the level text for storage
+            const clockedStressLevel = getStressLevel(clockedStress);
+            const clockedFatigueLevel = getFatigueLevel(clockedFatigue);
+            
+            // Store the clocked-in values in the facialAnalysisData
+            facialAnalysisData.clockedStressLevel = clockedStress;
+            facialAnalysisData.clockedFatigueLevel = clockedFatigue;
+            facialAnalysisData.clockedStressLevelText = clockedStressLevel;
+            facialAnalysisData.clockedFatigueLevelText = clockedFatigueLevel;
+            
+            // Show success message with timing info
+            showSuccessMessage(`✅ Reading recorded at ${seconds} seconds! Stress: ${clockedStressLevel}, Fatigue: ${clockedFatigueLevel}`);
+            
+            // Update status
+            document.getElementById('timerStatus').textContent = `Reading recorded at ${seconds}s. You can continue monitoring or submit your assessment.`;
+            document.getElementById('timerStatus').className = 'timer-status timer-ready';
+            
+            // Disable the clock-in button after successful recording
+            const clockInBtn = document.getElementById('clockInBtn');
+            clockInBtn.disabled = true;
+            clockInBtn.textContent = '✅ Reading Recorded';
+            clockInBtn.style.background = '#6c757d';
+            clockInBtn.style.animation = 'none';
+        }
+        
+        // Stop timer
+        function stopAnalysisTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            isTimerRunning = false;
+            analysisStartTime = null;
+            
+            // Hide timer
+            document.getElementById('analysisTimer').style.display = 'none';
+            
+
+        }
+
+        // Process frame and get face landmarks from server
+        async function processFrame() {
+            if (!isProcessing || !video.videoWidth) return;
+            
+            try {
+                // Set canvas size to match video
+                if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+                    console.log(`🎨 Canvas resized to: ${canvas.width}x${canvas.height}`);
+                }
+            
+                // Clear canvas and draw video frame every frame for smooth video
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+
+
+                
+                // Get canvas data as base64 for server processing
+                const imageData = canvas.toDataURL('image/jpeg', 0.8);
+                
+                // Send to server for face landmark detection
+                const response = await fetch('/api/face_landmarks', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                    body: JSON.stringify({
+                        image_data: imageData
+                    })
+                });
+                
+                const result = await response.json();
+                
+                console.log('📡 Server response:', result);
+                
+                                if (result.success && result.face_detected) {
+                    // Only draw landmarks every few frames to reduce blinking
+                    if (window.frameCount % 2 === 0) { // Every 2 frames
+                        drawLandmarks(result.landmarks, result);
+                    }
+                    
+                    // Update analysis data
+                    updateAnalysisFromLandmarks(result);
+                    
+                    console.log(`✅ Face detected: ${result.num_landmarks} landmarks, EAR: ${result.ear.toFixed(3)}`);
+            } else {
+                    console.log('No face detected or server error:', result.message || 'Unknown error');
+                    // Don't clear canvas - let the video frame persist
+                    // Landmarks will fade away naturally when no face is detected
+                }
+                
+            } catch (error) {
+                console.error('Error processing frame:', error);
+            }
+            
+            // Continue processing
+            if (isProcessing) {
+                requestAnimationFrame(processFrame);
+            }
+        }
+
+        // Draw landmarks on canvas with proper face mesh
+        function drawLandmarks(landmarks, result = null) {
+            if (!landmarks || landmarks.length === 0) return;
+            
+
+            
+            // Don't clear the canvas - landmarks will be drawn on top of existing content
+            // This ensures landmarks persist between video frame updates
+            
+            // Set drawing styles - make them much more visible
+            ctx.strokeStyle = '#00FF00';
+            ctx.lineWidth = 4; // Thicker lines
+            ctx.fillStyle = '#FF0000';
+            
+            // Define key facial feature connections (MediaPipe face mesh indices)
+            const faceConnections = [
+                // Face outline
+                [10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288, 397, 365, 379, 378, 400, 377, 152, 148, 176, 149, 150, 136, 172, 58, 132, 93, 234, 127, 162, 21, 54, 103, 67, 109, 10],
+                
+                // Left eyebrow
+                [276, 283, 282, 295, 285, 300, 293, 334, 296, 336, 285, 417, 465, 357, 309, 337, 299, 333, 297, 338, 301, 251, 389, 356, 454, 323, 361, 288, 397, 365, 379, 378, 400, 377, 152, 148, 176, 149, 150, 136, 172, 58, 132, 93, 234, 127, 162, 21, 54, 103, 67, 109, 10],
+                
+                // Right eyebrow
+                [46, 53, 52, 65, 55, 70, 63, 105, 66, 107, 55, 336, 296, 334, 293, 300, 276, 283, 282, 295, 285, 300, 293, 334, 296, 336, 285, 417, 465, 357, 309, 337, 299, 333, 297, 338, 301, 251, 389, 356, 454, 323, 361, 288, 397, 365, 379, 378, 400, 377, 152, 148, 176, 149, 150, 136, 172, 58, 132, 93, 234, 127, 162, 21, 54, 103, 67, 109, 10],
+                
+                // Left eye
+                [362, 385, 387, 263, 373, 380, 381, 382, 362],
+                
+                // Right eye
+                [33, 160, 158, 133, 153, 144, 145, 146, 33],
+                
+                // Nose
+                [1, 2, 98, 327, 326, 6, 197, 195, 5, 4, 1],
+                
+                // Mouth outer
+                [61, 84, 17, 314, 405, 320, 307, 375, 321, 308, 324, 318, 61],
+                
+                // Mouth inner
+                [78, 95, 88, 178, 87, 14, 317, 402, 318, 324, 308, 78]
+            ];
+            
+            // Draw face mesh connections with thicker, more visible lines
+            faceConnections.forEach((connection, index) => {
+                ctx.beginPath();
+                for (let i = 0; i < connection.length; i++) {
+                    const landmarkIndex = connection[i];
+                    if (landmarkIndex < landmarks.length) {
+                        const landmark = landmarks[landmarkIndex];
+                        const x = landmark.x * canvas.width;
+                        const y = landmark.y * canvas.height;
+                        
+                        if (i === 0) {
+                            ctx.moveTo(x, y);
+                        } else {
+                            ctx.lineTo(x, y);
+                        }
+                    }
+                }
+                
+                // Use different colors for different features with thicker lines
+                if (index === 0) {
+                    ctx.strokeStyle = '#FF0000'; // Red for face outline
+                    ctx.lineWidth = 8; // Very thick
+                } else if (index <= 2) {
+                    ctx.strokeStyle = '#00FF00'; // Green for eyebrows
+                    ctx.lineWidth = 6;
+                } else if (index <= 4) {
+                    ctx.strokeStyle = '#0000FF'; // Blue for eyes
+                    ctx.lineWidth = 6;
+            } else {
+                    ctx.strokeStyle = '#FFFF00'; // Yellow for nose/mouth
+                    ctx.lineWidth = 6;
+                }
+                
+                ctx.stroke();
+            });
+            
+            // Draw key landmark points with different colors
+            const keyLandmarks = [
+                // Eyes
+                { indices: [362, 385, 387, 263, 373, 380, 381, 382, 33, 160, 158, 133, 153, 144, 145, 146], color: '#FF0000' },
+                // Eyebrows
+                { indices: [276, 283, 282, 295, 285, 46, 53, 52, 65, 55], color: '#00FF00' },
+                // Nose
+                { indices: [1, 2, 98, 327, 326, 6, 197, 195, 5, 4], color: '#0000FF' },
+                // Mouth
+                { indices: [61, 84, 17, 314, 405, 320, 307, 375, 321, 308, 324, 318, 78, 95, 88, 178, 87, 14, 317, 402], color: '#FFFF00' }
+            ];
+            
+
+            
+            keyLandmarks.forEach(group => {
+                ctx.fillStyle = group.color;
+                group.indices.forEach(index => {
+                    if (index < landmarks.length) {
+                        const landmark = landmarks[index];
+                        const x = landmark.x * canvas.width;
+                        const y = landmark.y * canvas.height;
+                        
+                        ctx.beginPath();
+                        ctx.arc(x, y, 6, 0, 2 * Math.PI); // Larger dots
+                        ctx.fill();
+                        
+                        // Add a white border to make dots more visible
+                        ctx.strokeStyle = '#FFFFFF';
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                    }
+                });
+            });
+            
+
+            
+
+        }
+
+        // Smoothing variables for stable analysis
+        let stressHistory = [];
+        let fatigueHistory = [];
+        let lastUpdateTime = 0;
+        const UPDATE_INTERVAL = 300; // Update every 0.3 seconds for faster response
+        const HISTORY_SIZE = 3; // Keep last 3 readings for minimal smoothing
+        
+        // Update analysis results from landmarks using somnolence detection approach
+        function updateAnalysisFromLandmarks(result) {
+            const currentTime = Date.now();
+            
+            // Only update analysis every second to reduce fluctuations
+            if (currentTime - lastUpdateTime < UPDATE_INTERVAL) {
+                return;
+            }
+
+            lastUpdateTime = currentTime;
+            
+            const ear = result.ear;
+            const landmarks = result.landmarks;
+            
+            // Use somnolence detection approach for fatigue analysis
+            // Based on EAR (Eye Aspect Ratio) - lower EAR indicates closed eyes (fatigue)
+            const EAR_THRESH = 0.25; // Same threshold as somnolence detection
+            const fatigueLevel = Math.max(0, Math.min(100, (EAR_THRESH - ear) * 400)); // Scale to 0-100
+            
+            // Use intelligent stress detection based on facial landmarks
+            const stressLevel = calculateStressFromLandmarks(result.landmarks, ear);
+            
+            // Add to history for smoothing
+            stressHistory.push(stressLevel);
+            fatigueHistory.push(fatigueLevel);
+            
+            // Keep only recent history
+            if (stressHistory.length > HISTORY_SIZE) {
+                stressHistory.shift();
+            }
+            if (fatigueHistory.length > HISTORY_SIZE) {
+                fatigueHistory.shift();
+            }
+            
+            // Calculate smoothed values
+            const smoothedStress = stressHistory.reduce((a, b) => a + b, 0) / stressHistory.length;
+            const smoothedFatigue = fatigueHistory.reduce((a, b) => a + b, 0) / fatigueHistory.length;
+            
+            // Update UI with smoothed values
+            document.getElementById('stressScore').textContent = smoothedStress.toFixed(1);
+            document.getElementById('fatigueScore').textContent = smoothedFatigue.toFixed(1);
+            document.getElementById('stressLevelText').textContent = getStressLevel(smoothedStress);
+            document.getElementById('fatigueLevelText').textContent = getFatigueLevel(smoothedFatigue);
+            
+            // Update confidence indicators
+            const stressConfidence = Math.min(0.9, 0.3 + (stressHistory.length / HISTORY_SIZE) * 0.6);
+            const fatigueConfidence = Math.min(0.9, 0.3 + (fatigueHistory.length / HISTORY_SIZE) * 0.6);
+            
+            document.getElementById('stressConfidence').textContent = (stressConfidence * 100).toFixed(0) + '%';
+            document.getElementById('fatigueConfidence').textContent = (fatigueConfidence * 100).toFixed(0) + '%';
+            document.getElementById('stressConfidenceBar').style.width = (stressConfidence * 100) + '%';
+            document.getElementById('fatigueConfidenceBar').style.width = (fatigueConfidence * 100) + '%';
+            
+            // Store for form submission
+            facialAnalysisData = {
+                stressLevel: smoothedStress,
+                fatigueLevel: smoothedFatigue,
+                ear: ear,
+                landmarks: result.landmarks,
+                timestamp: new Date().toISOString()
+            };
+        }
+        
+        // Calculate stress from facial landmarks - intelligent detection
+        function calculateStressFromLandmarks(landmarks, ear) {
+            if (!landmarks || landmarks.length === 0) {
+                return 15; // Moderate baseline
+            }
+            
+            // Debug: Log the EAR value to see what's happening
+            console.log('EAR value:', ear);
+            
+            // Start with moderate stress level
+            let stressLevel = 15;
+            
+            // 1. EYE ANALYSIS - Smiling should open eyes (reduce stress)
+            console.log('Eye analysis - EAR:', ear);
+            if (ear > 0.25) { // Wide open eyes (relaxed)
+                stressLevel -= 10;
+                console.log('Wide eyes detected - reducing stress by 10');
+            } else if (ear < 0.15) { // Squinting (stress)
+                stressLevel += 20;
+                console.log('Squinting detected - adding 20 stress');
+            }
+            
+            // 2. MOUTH ANALYSIS - Smiling should open mouth (reduce stress)
+            const mouthIndices = [61, 84, 17, 314, 405, 320, 307, 375, 321, 308, 324, 318];
+            const topMouth = Math.min(...mouthIndices.map(i => landmarks[i]?.y || 1));
+            const bottomMouth = Math.max(...mouthIndices.map(i => landmarks[i]?.y || 0));
+            const mouthHeight = bottomMouth - topMouth;
+            
+            console.log('Mouth height:', mouthHeight);
+            
+            if (mouthHeight > 0.05) { // Open mouth (smiling/relaxed)
+                stressLevel -= 15;
+                console.log('Open mouth detected - reducing stress by 15');
+            } else if (mouthHeight < 0.02) { // Tightly closed mouth (stress)
+                stressLevel += 25;
+                console.log('Closed mouth detected - adding 25 stress');
+            }
+            
+            // 3. EYEBROW ANALYSIS - Relaxed brows should reduce stress
+            const leftEyebrowIndices = [276, 282, 283, 285];
+            const rightEyebrowIndices = [46, 52, 53, 55];
+            const eyeIndices = [362, 385, 387, 263, 33, 160, 158, 133];
+            
+            let leftEyebrowY = 0, rightEyebrowY = 0, eyeY = 0;
+            
+            leftEyebrowIndices.forEach(index => {
+                if (landmarks[index]) leftEyebrowY += landmarks[index].y;
+            });
+            rightEyebrowIndices.forEach(index => {
+                if (landmarks[index]) rightEyebrowY += landmarks[index].y;
+            });
+            eyeIndices.forEach(index => {
+                if (landmarks[index]) eyeY += landmarks[index].y;
+            });
+            
+            leftEyebrowY /= leftEyebrowIndices.length;
+            rightEyebrowY /= rightEyebrowIndices.length;
+            eyeY /= eyeIndices.length;
+            
+            const eyebrowDistance = (eyeY - leftEyebrowY + eyeY - rightEyebrowY) / 2;
+            console.log('Eyebrow distance from eyes:', eyebrowDistance);
+            
+            if (eyebrowDistance > 0.03) { // Raised eyebrows (relaxed/surprised)
+                stressLevel -= 8;
+                console.log('Raised eyebrows detected - reducing stress by 8');
+            } else if (eyebrowDistance < 0.01) { // Furrowed brows (stress)
+                stressLevel += 20;
+                console.log('Furrowed eyebrows detected - adding 20 stress');
+            }
+            
+            // Ensure stress level stays within bounds
+            stressLevel = Math.max(5, Math.min(100, stressLevel));
+            
+            console.log('Final stress level:', stressLevel);
+            return stressLevel;
+        }
+        
+        // Calculate ultra-conservative eyebrow stress - only extreme furrowing
+        function calculateUltraConservativeEyebrowStress(landmarks) {
+            const leftEyebrowIndices = [276, 282, 283, 285];
+            const rightEyebrowIndices = [46, 52, 53, 55];
+            const eyeIndices = [362, 385, 387, 263, 33, 160, 158, 133];
+            
+            // Calculate average eyebrow height relative to eyes
+            let leftEyebrowY = 0;
+            let rightEyebrowY = 0;
+            let eyeY = 0;
+            
+            leftEyebrowIndices.forEach(index => {
+                if (landmarks[index]) leftEyebrowY += landmarks[index].y;
+            });
+            rightEyebrowIndices.forEach(index => {
+                if (landmarks[index]) rightEyebrowY += landmarks[index].y;
+            });
+            eyeIndices.forEach(index => {
+                if (landmarks[index]) eyeY += landmarks[index].y;
+            });
+            
+            leftEyebrowY /= leftEyebrowIndices.length;
+            rightEyebrowY /= rightEyebrowIndices.length;
+            eyeY /= eyeIndices.length;
+            
+            // Only extreme furrowing (brows very close to eyes) indicates stress
+            const leftFurrowing = Math.max(0, (eyeY - leftEyebrowY) * 5);
+            const rightFurrowing = Math.max(0, (eyeY - rightEyebrowY) * 5);
+            
+            // Very high threshold - only extreme cases
+            return Math.min(1, (leftFurrowing + rightFurrowing) / 2);
+        }
+        
+        // Calculate ultra-conservative mouth stress - only very closed mouths
+        function calculateUltraConservativeMouthStress(landmarks) {
+            const mouthIndices = [61, 84, 17, 314, 405, 320, 307, 375, 321, 308, 324, 318];
+            
+            // Calculate mouth openness (vertical distance)
+            const topMouth = Math.min(...mouthIndices.map(i => landmarks[i]?.y || 1));
+            const bottomMouth = Math.max(...mouthIndices.map(i => landmarks[i]?.y || 0));
+            
+            const mouthHeight = bottomMouth - topMouth;
+            
+            // Only extremely closed mouths indicate stress
+            // Normal mouth opening is around 0.02-0.06 in normalized coordinates
+            const normalOpening = 0.04;
+            
+            // Only if mouth is very tightly closed (less than 25% of normal)
+            if (mouthHeight < normalOpening * 0.25) {
+                return Math.max(0, 1 - (mouthHeight / (normalOpening * 0.25)));
+            }
+            
+            return 0; // Normal or open mouth = no stress
+        }
+        
+        // Calculate ultra-conservative eye stress - only extreme squinting
+        function calculateUltraConservativeEyeStress(ear) {
+            // Only extremely low EAR (very severe squinting) indicates stress
+            // Normal EAR is around 0.25, extreme squinting is below 0.10
+            const extremeStressThreshold = 0.10;
+            
+            if (ear < extremeStressThreshold) {
+                return Math.max(0, (extremeStressThreshold - ear) / extremeStressThreshold);
+            }
+            
+            return 0; // Normal, wide, or slightly squinted eyes = no stress
+        }
+        
+
+        
+
+        
+        // Calculate fatigue from facial landmarks
+        function calculateFatigueFromLandmarks(landmarks, ear) {
+            if (!landmarks || landmarks.length === 0) {
+                return 20; // Default baseline
+            }
+            
+            let fatigueScore = 0;
+            let featureCount = 0;
+            
+            // 1. Eye Aspect Ratio (EAR) - primary fatigue indicator
+            // Lower EAR indicates closed eyes (fatigue)
+            const earFatigue = Math.max(0, (0.25 - ear) * 200);
+            fatigueScore += earFatigue;
+            featureCount++;
+            
+            // 2. Eye openness variation (droopy eyes indicate fatigue)
+            const eyeOpenness = calculateEyeOpenness(landmarks);
+            fatigueScore += eyeOpenness * 100;
+            featureCount++;
+            
+            // 3. Head position (drooping head indicates fatigue)
+            const headPosition = calculateHeadPosition(landmarks);
+            fatigueScore += headPosition * 100;
+            featureCount++;
+            
+            // 4. Facial muscle relaxation (relaxed muscles indicate fatigue)
+            const muscleRelaxation = calculateMuscleRelaxation(landmarks);
+            fatigueScore += muscleRelaxation * 80;
+            featureCount++;
+            
+            // 5. Blink rate simulation (slower blinks indicate fatigue)
+            const blinkRate = calculateBlinkRate(landmarks);
+            fatigueScore += blinkRate * 60;
+            featureCount++;
+            
+            // Average the fatigue indicators
+            const averageFatigue = fatigueScore / featureCount;
+            
+            // Normalize to 0-100 range with reasonable baseline
+            return Math.max(0, Math.min(100, averageFatigue + 15));
+        }
+        
+        // Calculate eye openness
+        function calculateEyeOpenness(landmarks) {
+            const leftEyeIndices = [362, 385, 387, 263, 373, 380, 381, 382];
+            const rightEyeIndices = [33, 160, 158, 133, 153, 144, 145, 146];
+            
+            let leftEyeHeight = 0;
+            let rightEyeHeight = 0;
+            
+            // Calculate left eye height
+            const leftTop = Math.min(...leftEyeIndices.map(i => landmarks[i]?.y || 1));
+            const leftBottom = Math.max(...leftEyeIndices.map(i => landmarks[i]?.y || 0));
+            leftEyeHeight = leftBottom - leftTop;
+            
+            // Calculate right eye height
+            const rightTop = Math.min(...rightEyeIndices.map(i => landmarks[i]?.y || 1));
+            const rightBottom = Math.max(...rightEyeIndices.map(i => landmarks[i]?.y || 0));
+            rightEyeHeight = rightBottom - rightTop;
+            
+            // Average eye height (lower = more fatigue)
+            return Math.max(0, 1 - ((leftEyeHeight + rightEyeHeight) / 2) * 10);
+        }
+        
+        // Calculate head position (drooping indicates fatigue)
+        function calculateHeadPosition(landmarks) {
+            const noseIndex = 1; // Nose tip
+            const chinIndex = 152; // Chin
+            
+            if (!landmarks[noseIndex] || !landmarks[chinIndex]) {
+                return 0;
+            }
+            
+            const noseY = landmarks[noseIndex].y;
+            const chinY = landmarks[chinIndex].y;
+            
+            // Drooping head (chin closer to nose) indicates fatigue
+            return Math.max(0, (noseY - chinY) * 5);
+        }
+        
+        // Calculate muscle relaxation
+        function calculateMuscleRelaxation(landmarks) {
+            const cheekIndices = [123, 50, 36, 137, 0, 11, 12, 13, 14, 15, 16, 17, 18, 200, 199, 175];
+            
+            let muscleTension = 0;
+            
+            // Calculate average distance between cheek points
+            for (let i = 0; i < cheekIndices.length - 1; i++) {
+                const current = landmarks[cheekIndices[i]];
+                const next = landmarks[cheekIndices[i + 1]];
+                if (current && next) {
+                    muscleTension += Math.sqrt(
+                        Math.pow(next.x - current.x, 2) + Math.pow(next.y - current.y, 2)
+                    );
+                }
+            }
+            
+            // Lower tension (relaxed muscles) indicates fatigue
+            return Math.max(0, 1 - muscleTension * 2);
+        }
+        
+        // Calculate blink rate simulation
+        function calculateBlinkRate(landmarks) {
+            // Simulate blink rate based on eye openness
+            const leftEyeIndices = [362, 385, 387, 263, 373, 380, 381, 382];
+            const rightEyeIndices = [33, 160, 158, 133, 153, 144, 145, 146];
+            
+            let leftEyeArea = 0;
+            let rightEyeArea = 0;
+            
+            // Calculate eye areas
+            leftEyeIndices.forEach(index => {
+                if (landmarks[index]) {
+                    leftEyeArea += landmarks[index].x + landmarks[index].y;
+                }
+            });
+            
+            rightEyeIndices.forEach(index => {
+                if (landmarks[index]) {
+                    rightEyeArea += landmarks[index].x + landmarks[index].y;
+                }
+            });
+            
+            // Smaller eye areas indicate fatigue
+            return Math.max(0, 1 - ((leftEyeArea + rightEyeArea) / 2) * 0.1);
+        }
+
+        // Get stress level text
+        function getStressLevel(score) {
+            if (score < 33) return 'Minimal';
+            if (score < 66) return 'Medium';
+            return 'Extreme';
+        }
+
+        // Get fatigue level text
+        function getFatigueLevel(score) {
+            if (score < 33) return 'Minimal';
+            if (score < 66) return 'Medium';
+            return 'Extreme';
+        }
+
+        // Reset analysis
+        function resetAnalysis() {
+            // Clear smoothing history
+            stressHistory = [];
+            fatigueHistory = [];
+            lastUpdateTime = 0;
+            
+            document.getElementById('stressScore').textContent = '0.0';
+            document.getElementById('fatigueScore').textContent = '0.0';
+            document.getElementById('stressLevelText').textContent = 'Minimal';
+            document.getElementById('fatigueLevelText').textContent = 'Minimal';
+            document.getElementById('analysisStatus').textContent = 'Ready';
+            
+            // Clear facial analysis data
+            facialAnalysisData = null;
+            
+            // Stop timer
+            stopAnalysisTimer();
+            
+            // Re-enable clock-in button
+            const clockInBtn = document.getElementById('clockInBtn');
+            clockInBtn.disabled = false;
+            clockInBtn.textContent = '✅ Clock In - Record Reading';
+            clockInBtn.style.background = '#28a745';
+            clockInBtn.style.animation = 'pulse 1.5s infinite';
+            
+            showSuccessMessage('Analysis reset successfully!');
+
+        }
+
+        // Test camera
+        function testCamera() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                showErrorMessage('Camera not supported in this browser');
+                return;
+            }
+            showSuccessMessage('Camera API is supported. Try starting the camera.');
+        }
+
+        // Simple camera test
+        async function simpleCameraTest() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                showSuccessMessage('Camera test successful!');
+                stream.getTracks().forEach(track => track.stop());
+                } catch (error) {
+                showErrorMessage('Camera test failed: ' + error.message);
+            }
+        }
+
+        // Form submission
         function submitForm() {
             const formData = {
                 age: document.getElementById('age').value,
                 gender: document.getElementById('gender').value,
-                
-                // Symptoms Assessment
                 symptoms: Array.from(document.querySelectorAll('input[name="symptoms"]:checked')).map(cb => cb.value),
-                
-                // Medical History & Risk Factors
                 medical_history: Array.from(document.querySelectorAll('input[name="medical_history"]:checked')).map(cb => cb.value),
-                
-                // Stroke Risk Factors
                 risk_factors: Array.from(document.querySelectorAll('input[name="risk_factors"]:checked')).map(cb => cb.value),
-                
-                // Facial Analysis Data
                 facial_analysis: facialAnalysisData
             };
 
             fetch('/submit_demographics', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData)
             })
             .then(response => response.json())
             .then(data => {
-                console.log('Response from server:', data); // Debug logging
                 if (data.success) {
                     showSuccessMessage('Assessment submitted successfully!');
                     loadStoredData();
-                    
-
-                    
-                    // Show heatstroke prediction if available
-                    if (data.heatstroke_prediction) {
-                        console.log('Displaying heatstroke prediction:', data.heatstroke_prediction); // Debug logging
-                        displayHeatstrokePrediction(data.heatstroke_prediction).then(() => {
-                            // Store the prediction in localStorage for homepage update
-                            localStorage.setItem('latestHeatstrokePrediction', JSON.stringify(data.heatstroke_prediction));
-                            console.log('✅ Heatstroke prediction stored for homepage update');
-                            
-                            // Trigger a custom event to notify the homepage
-                            window.dispatchEvent(new CustomEvent('heatstrokePredictionUpdated', {
-                                detail: data.heatstroke_prediction
-                            }));
-                        });
-                    } else {
-                        console.log('No heatstroke prediction in response'); // Debug logging
-                        // Still try to show BPM data if available
-                        displayBPMData();
-                    }
-
                 } else {
                     showErrorMessage('Error submitting assessment: ' + data.error);
                 }
@@ -722,503 +2554,45 @@
             });
         }
 
-
-
-
-
-        async function displayHeatstrokePrediction(prediction) {
-            console.log('displayHeatstrokePrediction called with:', prediction); // Debug logging
-            
-            // Create or update heatstroke prediction display
-            let heatstrokeDiv = document.getElementById('heatstroke-prediction-display');
-            if (!heatstrokeDiv) {
-                console.log('Creating new heatstroke prediction div'); // Debug logging
-                heatstrokeDiv = document.createElement('div');
-                heatstrokeDiv.id = 'heatstroke-prediction-display';
-                heatstrokeDiv.className = 'heatstroke-prediction';
-                document.querySelector('.demographics-container').appendChild(heatstrokeDiv);
-            }
-
-            // Try to get BPM data from the latest prediction API if not available in prediction
-            let bpmData = prediction.bpm_data || {};
-            if (!bpmData.bpm || !bpmData.skin_temperature) {
-                try {
-                    const response = await fetch('/api/latest_heatstroke_prediction');
-                    if (response.ok) {
-                        const data = await response.json();
-                        if (data.success && data.bpm_data) {
-                            bpmData = data.bpm_data;
-                            console.log('Fetched BPM data from API:', bpmData);
-                        }
-                    }
-                } catch (error) {
-                    console.warn('Could not fetch BPM data:', error);
-                }
-            }
-
-            const probability = (prediction.heatstroke_probability * 100).toFixed(1);
-            const riskLevel = prediction.risk_level;
-            const isHighRisk = prediction.heatstroke_prediction;
-
-            // Get BPM and skin temperature from the prediction
-            let bpm = prediction.feature_values?.Heart_Rate;
-            let skinTemp = prediction.feature_values?.Temperature;
-            
-            // Get additional BPM data if available (use the one we fetched above)
-            const confidence = bpmData.confidence || 0;
-            const skinTempRange = bpmData.skin_temp_min && bpmData.skin_temp_max ? 
-                `${bpmData.skin_temp_min.toFixed(1)}-${bpmData.skin_temp_max.toFixed(1)}°C` : '';
-            const dataSource = bpmData.data_source || 'Model Prediction';
-
-            // Debug logging
-            console.log('BPM Data from prediction:', {
-                bpm: bpm,
-                skinTemp: skinTemp,
-                bpmData: bpmData,
-                feature_values: prediction.feature_values
-            });
-
-            // Format BPM and skinTemp for display - try multiple sources
-            let bpmDisplay = '';
-            let skinTempDisplay = '';
-            
-            // Try to get BPM from multiple sources
-            if (typeof bpm === 'number' && !isNaN(bpm) && bpm > 0) {
-                bpmDisplay = `${bpm} BPM${confidence > 0 ? ` (Confidence: ${(confidence * 100).toFixed(1)}%)` : ''}`;
-            } else if (bpmData.bpm && typeof bpmData.bpm === 'number' && !isNaN(bpmData.bpm)) {
-                bpmDisplay = `${bpmData.bpm} BPM${confidence > 0 ? ` (Confidence: ${(confidence * 100).toFixed(1)}%)` : ''}`;
-            }
-            
-            // Try to get skin temperature from multiple sources
-            if (typeof skinTemp === 'number' && !isNaN(skinTemp) && skinTemp > 0) {
-                skinTempDisplay = `${skinTemp}°C${skinTempRange ? ` (Range: ${skinTempRange})` : ''}`;
-            } else if (bpmData.skin_temperature && typeof bpmData.skin_temperature === 'number' && !isNaN(bpmData.skin_temperature)) {
-                skinTempDisplay = `${bpmData.skin_temperature}°C${skinTempRange ? ` (Range: ${skinTempRange})` : ''}`;
-            }
-
-            // Generate recommendations based on risk level
-            let recommendations = [];
-            if (riskLevel === 'High' || isHighRisk) {
-                recommendations = [
-                    'Immediately move to a cool environment',
-                    'Remove excess clothing',
-                    'Apply cool water to skin',
-                    'Seek immediate medical attention',
-                    'Avoid any physical activity'
-                ];
-            } else if (riskLevel === 'Moderate') {
-                recommendations = [
-                    'Move to air-conditioned environment',
-                    'Stay hydrated with cool water',
-                    'Take frequent breaks',
-                    'Monitor for symptoms of heat exhaustion',
-                    'Consider stopping outdoor activities'
-                ];
-            } else {
-                recommendations = [
-                    'Continue normal activities with standard precautions',
-                    'Stay hydrated throughout the day',
-                    'Take regular breaks if working outdoors',
-                    'Monitor for any new symptoms'
-                ];
-            }
-
-            heatstrokeDiv.innerHTML = `
-                <div class="prediction-card">
-                    <div class="prediction-header">
-                        <h5>🔥 Heatstroke Risk Assessment</h5>
-                        <span class="prediction-status ${riskLevel.toLowerCase()}-risk">${riskLevel.toUpperCase()}</span>
-                    </div>
-                    <p class="text-muted">Based on your health data and current BPM readings, here's your heatstroke risk assessment:</p>
-                    
-                    <div class="prediction-details">
-                        <div class="prediction-item">
-                            <span class="label">Risk Level:</span>
-                            <span class="value">${riskLevel.toUpperCase()}</span>
-                        </div>
-                        <div class="prediction-item">
-                            <span class="label">Probability:</span>
-                            <span class="value">${probability}%</span>
-                        </div>
-                        <div class="prediction-item">
-                            <span class="label">Current BPM:</span>
-                            <span class="value">${bpmDisplay}</span>
-                        </div>
-                        <div class="prediction-item">
-                            <span class="label">Skin Temperature:</span>
-                            <span class="value">${skinTempDisplay}</span>
-                        </div>
-                        <div class="prediction-item">
-                            <span class="label">Data Source:</span>
-                            <span class="value">${dataSource}</span>
-                        </div>
-                    </div>
-                    
-                    <div class="prediction-recommendations">
-                        <h6>Recommendations:</h6>
-                        <ul>
-                            ${recommendations.map(rec => `<li>${rec}</li>`).join('')}
-                        </ul>
-                    </div>
-                </div>
-            `;
-
-            // Show the prediction
-            heatstrokeDiv.style.display = 'block';
-            console.log('Heatstroke prediction display completed'); // Debug logging
-        }
-
-        async function displayBPMData() {
-            console.log('Displaying BPM data...');
-            
-            try {
-                const response = await fetch('/api/latest_heatstroke_prediction');
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.success && data.bpm_data) {
-                        const bpmData = data.bpm_data;
-                        
-                        // Create or update BPM data display
-                        let bpmDiv = document.getElementById('bpm-data-display');
-                        if (!bpmDiv) {
-                            bpmDiv = document.createElement('div');
-                            bpmDiv.id = 'bpm-data-display';
-                            bpmDiv.className = 'bpm-data';
-                            document.querySelector('.demographics-container').appendChild(bpmDiv);
-                        }
-
-                        const bpm = bpmData.bpm || 'N/A';
-                        const skinTemp = bpmData.skin_temperature || 'N/A';
-                        const confidence = bpmData.confidence || 0;
-                        const skinTempRange = bpmData.skin_temp_min && bpmData.skin_temp_max ? 
-                            `${bpmData.skin_temp_min.toFixed(1)}-${bpmData.skin_temp_max.toFixed(1)}°C` : 'N/A';
-                        const dataSource = bpmData.data_source || 'Sensor Data';
-
-                        bpmDiv.innerHTML = `
-                            <div class="prediction-card">
-                                <div class="prediction-header">
-                                    <h5>📊 Current Physiological Data</h5>
-                                    <span class="prediction-status info">LIVE</span>
-                                </div>
-                                <p class="text-muted">Real-time data from your Arduino sensors:</p>
-                                
-                                <div class="prediction-details">
-                                    <div class="prediction-item">
-                                        <span class="label">Current BPM:</span>
-                                        <span class="value">${bpm} BPM${confidence > 0 ? ` (Confidence: ${(confidence * 100).toFixed(1)}%)` : ''}</span>
-                                    </div>
-                                    <div class="prediction-item">
-                                        <span class="label">Skin Temperature:</span>
-                                        <span class="value">${skinTemp}°C (Range: ${skinTempRange})</span>
-                                    </div>
-                                    <div class="prediction-item">
-                                        <span class="label">Data Source:</span>
-                                        <span class="value">${dataSource}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-
-                        bpmDiv.style.display = 'block';
-                        console.log('BPM data display completed');
-                    }
-                }
-            } catch (error) {
-                console.warn('Could not fetch BPM data:', error);
-            }
-        }
-
+        // Load stored data
         function loadStoredData() {
             fetch('/api/demographics')
-            .then(response => response.json())
-            .then(data => {
-                const container = document.getElementById('dataItems');
-                container.innerHTML = '';
-
-                data.forEach((item, index) => {
-                    const card = document.createElement('div');
-                    card.className = 'data-item';
-                    
-                    const symptomsList = item.symptoms && item.symptoms.length > 0 
-                        ? item.symptoms.join(', ') : 'None';
-                    const medicalHistoryList = item.medical_history && item.medical_history.length > 0 
-                        ? item.medical_history.join(', ') : 'None';
-                    const riskFactorsList = item.risk_factors && item.risk_factors.length > 0 
-                        ? item.risk_factors.join(', ') : 'None';
-                    
-                    // Add null checks for risk scores
-                    let riskScoresHtml = '';
-                    if (item.risk_scores) {
-                        const infectionScore = item.risk_scores.infection_score || 0;
-                        const dehydrationScore = item.risk_scores.dehydration_score || 0;
-                        const arrhythmiaScore = item.risk_scores.arrhythmia_score || 0;
-                        
-                        riskScoresHtml = `
-                        <div style='margin-top:10px;'>
-                            <span style='font-weight:bold;'>Infection Risk:</span> ${infectionScore.toFixed(1)} &nbsp; 
-                            <span style='font-weight:bold;'>Dehydration Risk:</span> ${dehydrationScore.toFixed(1)} &nbsp; 
-                            <span style='font-weight:bold;'>Arrhythmia Risk:</span> ${arrhythmiaScore.toFixed(1)}
-                        </div>`;
-                    }
-                    
-                    // Add facial analysis data if available
-                    if (item.facial_analysis) {
-                        const fa = item.facial_analysis;
-                        riskScoresHtml += `
-                            <div class="facial-analysis-summary">
-                                <strong>Facial Analysis:</strong><br>
-                                <span class="badge badge-${fa.stressLevel > 60 ? 'danger' : fa.stressLevel > 30 ? 'warning' : 'success'}">Stress: ${fa.stressLevel}%</span>
-                                <span class="badge badge-${fa.fatigueLevel > 60 ? 'danger' : fa.fatigueLevel > 30 ? 'warning' : 'success'}">Fatigue: ${fa.fatigueLevel}%</span>
-                                <span class="badge badge-info">Emotion: ${fa.emotion}</span>
-                                <span class="badge badge-${fa.healthScore === 'excellent' ? 'success' : fa.healthScore === 'good' ? 'info' : fa.healthScore === 'fair' ? 'warning' : 'danger'}">Health: ${fa.healthScore}</span>
-                            </div>
-                        `;
-                    }
-                    
-                    card.innerHTML = `
-                        <strong>Age:</strong> ${item.age} | 
-                        <strong>Gender:</strong> ${item.gender} | 
-                        <strong>Date:</strong> ${new Date(item.timestamp * 1000).toLocaleString()}
-                        <br><strong>Symptoms:</strong> ${symptomsList}
-                        <br><strong>Medical History:</strong> ${medicalHistoryList}
-                        <br><strong>Risk Factors:</strong> ${riskFactorsList}
-                        ${riskScoresHtml}
-                    `;
-                    container.appendChild(card);
-                });
-                
-                // Show the data list
-                document.getElementById('dataList').style.display = 'block';
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Loaded demographics data:', data);
             })
             .catch(error => {
-                console.error('Error loading stored data:', error);
-                const container = document.getElementById('dataItems');
-                container.innerHTML = '<p>Error loading data.</p>';
-            });
+                    console.error('Error loading demographics data:', error);
+                });
         }
-        
-        // Load existing data on page load
-        loadStoredData();
-        
-        // Add validation for age input
-        document.getElementById('age').addEventListener('input', function() {
-            const age = parseInt(this.value);
-            if (age < 1 || age > 120) {
-                this.setCustomValidity('Age must be between 1 and 120');
-            } else {
-                this.setCustomValidity('');
-            }
-        });
 
+        // Show success message
         function showSuccessMessage(message) {
             const messageDiv = document.getElementById('healthMessage');
             messageDiv.textContent = message;
             messageDiv.className = 'message success';
             messageDiv.style.display = 'block';
-            
             setTimeout(() => {
                 messageDiv.style.display = 'none';
             }, 5000);
         }
 
+        // Show error message
         function showErrorMessage(message) {
             const messageDiv = document.getElementById('healthMessage');
             messageDiv.textContent = message;
             messageDiv.className = 'message error';
             messageDiv.style.display = 'block';
-            
             setTimeout(() => {
                 messageDiv.style.display = 'none';
             }, 5000);
         }
 
-        // Load stored data when page loads
+        // Initialize when page loads
         document.addEventListener('DOMContentLoaded', function() {
+
             loadStoredData();
-            // Also try to display BPM data
-            displayBPMData();
         });
-        
-
-        
-
-        
-
-        
-
-
-        // Camera and Facial Analysis Variables
-        let stream = null;
-        let video = document.getElementById('video');
-        let canvas = document.getElementById('canvas');
-        let ctx = canvas.getContext('2d');
-        let facialAnalysisData = null;
-
-        // Camera Controls
-        document.getElementById('startCamera').addEventListener('click', startCamera);
-        document.getElementById('stopCamera').addEventListener('click', stopCamera);
-        document.getElementById('captureImage').addEventListener('click', captureAndAnalyze);
-
-        async function startCamera() {
-            try {
-                const cameraContainer = document.querySelector('.camera-container');
-                cameraContainer.classList.add('loading');
-                
-                stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { 
-                        width: { ideal: 640 },
-                        height: { ideal: 480 },
-                        facingMode: 'user'
-                    } 
-                });
-                
-                video.srcObject = stream;
-                cameraContainer.classList.remove('loading');
-                
-                document.getElementById('startCamera').style.display = 'none';
-                document.getElementById('captureImage').style.display = 'inline-block';
-                document.getElementById('stopCamera').style.display = 'inline-block';
-                document.getElementById('cameraInstructions').style.display = 'none';
-                
-            } catch (error) {
-                console.error('Camera access error:', error);
-                const cameraContainer = document.querySelector('.camera-container');
-                cameraContainer.classList.remove('loading');
-                cameraContainer.classList.add('permission-denied');
-                showErrorMessage('Camera access denied. Please allow camera permissions and try again.');
-            }
-        }
-
-        function stopCamera() {
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
-                stream = null;
-            }
-            
-            video.srcObject = null;
-            document.getElementById('startCamera').style.display = 'inline-block';
-            document.getElementById('captureImage').style.display = 'none';
-            document.getElementById('stopCamera').style.display = 'none';
-            document.getElementById('cameraInstructions').style.display = 'block';
-            document.getElementById('analysisResults').style.display = 'none';
-            
-            const cameraContainer = document.querySelector('.camera-container');
-            cameraContainer.classList.remove('loading', 'permission-denied');
-        }
-
-        function captureAndAnalyze() {
-            if (!stream) {
-                showErrorMessage('Camera not started. Please start the camera first.');
-                return;
-            }
-
-            // Set canvas dimensions to match video
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            
-            // Draw video frame to canvas
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            
-            // Simulate facial analysis (in a real implementation, this would use a ML model)
-            const analysisResults = performFacialAnalysis();
-            
-            // Display results
-            displayFacialAnalysis(analysisResults);
-            
-            // Store results for form submission
-            facialAnalysisData = analysisResults;
-            
-            showSuccessMessage('Facial analysis completed successfully!');
-        }
-
-        function performFacialAnalysis() {
-            // Simulated facial analysis results
-            // In a real implementation, this would use computer vision libraries like:
-            // - face-api.js for face detection and landmarks
-            // - TensorFlow.js for emotion recognition
-            // - OpenCV.js for facial feature analysis
-            
-            const stressLevel = Math.random() * 100;
-            const fatigueLevel = Math.random() * 100;
-            
-            // Determine emotional state based on stress level
-            let emotion = 'neutral';
-            if (stressLevel < 30) emotion = 'happy';
-            else if (stressLevel > 70) emotion = 'stressed';
-            else if (fatigueLevel > 60) emotion = 'sad';
-            
-            // Determine eye openness based on fatigue
-            let eyeOpenness = 'normal';
-            if (fatigueLevel > 70) eyeOpenness = 'half';
-            else if (fatigueLevel > 90) eyeOpenness = 'closed';
-            
-            // Determine mouth position based on stress
-            let mouthPosition = 'relaxed';
-            if (stressLevel > 60) mouthPosition = 'tight';
-            else if (stressLevel < 20) mouthPosition = 'open';
-            
-            // Calculate overall health score
-            let healthScore = 'good';
-            const avgScore = (stressLevel + fatigueLevel) / 2;
-            if (avgScore < 20) healthScore = 'excellent';
-            else if (avgScore < 40) healthScore = 'good';
-            else if (avgScore < 60) healthScore = 'fair';
-            else healthScore = 'poor';
-            
-            return {
-                stressLevel: Math.round(stressLevel),
-                fatigueLevel: Math.round(fatigueLevel),
-                emotion: emotion,
-                eyeOpenness: eyeOpenness,
-                mouthPosition: mouthPosition,
-                healthScore: healthScore,
-                timestamp: new Date().toISOString()
-            };
-        }
-
-        function displayFacialAnalysis(results) {
-            // Update progress bars
-            document.getElementById('stressBar').style.width = results.stressLevel + '%';
-            document.getElementById('stressValue').textContent = results.stressLevel + '%';
-            
-            document.getElementById('fatigueBar').style.width = results.fatigueLevel + '%';
-            document.getElementById('fatigueValue').textContent = results.fatigueLevel + '%';
-            
-            // Update text results
-            const emotionElement = document.getElementById('emotionResult');
-            emotionElement.textContent = results.emotion.charAt(0).toUpperCase() + results.emotion.slice(1);
-            emotionElement.className = results.emotion;
-            
-            const eyeElement = document.getElementById('eyeOpenness');
-            eyeElement.textContent = results.eyeOpenness.charAt(0).toUpperCase() + results.eyeOpenness.slice(1);
-            eyeElement.className = results.eyeOpenness;
-            
-            const mouthElement = document.getElementById('mouthPosition');
-            mouthElement.textContent = results.mouthPosition.charAt(0).toUpperCase() + results.mouthPosition.slice(1);
-            mouthElement.className = results.mouthPosition;
-            
-            const healthElement = document.getElementById('healthScore');
-            healthElement.textContent = results.healthScore.charAt(0).toUpperCase() + results.healthScore.slice(1);
-            healthElement.className = results.healthScore;
-            
-            // Show results
-            document.getElementById('analysisResults').style.display = 'block';
-        }
-
-        function updateHomepageHeatstroke() {
-            // Get the latest heatstroke prediction from localStorage
-            const prediction = localStorage.getItem('latestHeatstrokePrediction');
-            if (prediction) {
-                try {
-                    const predictionData = JSON.parse(prediction);
-                    // Trigger storage event to update homepage
-                    localStorage.setItem('latestHeatstrokePrediction', JSON.stringify(predictionData));
-                    console.log('✅ Triggered homepage heatstroke update');
-                } catch (error) {
-                    console.warn('Error updating homepage heatstroke:', error);
-                }
-            }
-        }
 
     </script>
 </body>
